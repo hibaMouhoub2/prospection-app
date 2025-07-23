@@ -17,39 +17,44 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
 
-/**
- * Configuration de sécurité Spring Security - VERSION SANS DÉPENDANCE CIRCULAIRE
- */
+
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
-    /**
-     * Configuration du PasswordEncoder
-     */
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    /**
-     * Configuration de l'AuthenticationManager
-     */
+
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
-    /**
-     * Configuration CORS
-     */
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost:5173", "http://localhost:3000"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+
+        // Origins autorisées
+        configuration.setAllowedOriginPatterns(Arrays.asList(
+                "http://localhost:5173",
+                "http://localhost:3000"
+        ));
+
+
+        configuration.setAllowedMethods(Arrays.asList(
+                "GET", "POST", "PUT", "DELETE", "OPTIONS"
+        ));
+
+
         configuration.setAllowedHeaders(Arrays.asList("*"));
+
+        // Credentials autorisés
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -57,27 +62,35 @@ public class SecurityConfig {
         return source;
     }
 
-    /**
-     * Configuration principale de sécurité - SANS INJECTION D'AUTHSERVICE
-     */
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable())
+        http
+
+                .csrf(csrf -> csrf.disable())
+
+                // Configuration CORS
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
+                // Session stateless (JWT)
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
+
+                // Configuration des autorisations
                 .authorizeHttpRequests(authz -> authz
-                        // Endpoints publics
-                        .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/h2-console/**").permitAll()
+
+                        .requestMatchers("/api/auth/login").permitAll()
+                        .requestMatchers("/api/auth/register").permitAll()
+                        .requestMatchers("/api/auth/ping").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/error").permitAll()
 
-                        // Tous les autres endpoints nécessitent une authentification
-                        .anyRequest().authenticated()
+
+                        .anyRequest().permitAll()
                 )
-                // Permettre les frames pour H2 console (syntaxe Spring Security 6+)
+
+                // Configuration des headers (pour H2 console)
                 .headers(headers -> headers
                         .frameOptions(frameOptions -> frameOptions.sameOrigin())
                 );

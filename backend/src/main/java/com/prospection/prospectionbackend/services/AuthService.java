@@ -18,7 +18,11 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Service d'authentification et gestion des utilisateurs - VERSION SANS AUTHENTICATIONMANAGER
+ * Service d'authentification - Version propre
+ * Responsabilités:
+ * - Authentification des utilisateurs
+ * - Génération des tokens JWT
+ * - Gestion des sessions
  */
 @Service
 @Transactional
@@ -34,31 +38,45 @@ public class AuthService implements UserDetailsService {
     private JwtUtil jwtUtil;
 
     /**
-     * Méthode requise par UserDetailsService pour Spring Security
+     * Méthode requise par UserDetailsService
      */
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         return utilisateurRepository.findByEmailAndActifTrue(email)
-                .orElseThrow(() -> new UsernameNotFoundException("Utilisateur non trouvé avec l'email: " + email));
+                .orElseThrow(() -> new UsernameNotFoundException("Utilisateur non trouvé: " + email));
     }
 
     /**
-     * Authentification manuelle et génération du token JWT
+     * Authentification et génération du token
      */
     public Map<String, Object> login(String email, String motDePasse) throws AuthenticationException {
-        // Recherche de l'utilisateur
+        System.out.println("=== LOGIN ATTEMPT ===");
+        System.out.println("Email: " + email);
+        System.out.println("Backend URL appelée: /api/auth/login");
+
+        // Recherche de l'utilisateur actif
         Optional<Utilisateur> utilisateurOpt = utilisateurRepository.findByEmailAndActifTrue(email);
 
         if (utilisateurOpt.isEmpty()) {
+            System.out.println(" Utilisateur non trouvé pour: " + email);
             throw new org.springframework.security.authentication.BadCredentialsException("Email ou mot de passe incorrect");
         }
 
         Utilisateur utilisateur = utilisateurOpt.get();
+        System.out.println("Utilisateur trouvé: " + utilisateur.getEmail());
+        System.out.println("Hash stocké: " + utilisateur.getMotDePasse());
+        System.out.println("Longueur hash: " + utilisateur.getMotDePasse().length());
 
-        // Vérification manuelle du mot de passe
-        if (!passwordEncoder.matches(motDePasse, utilisateur.getMotDePasse())) {
+        // Vérification du mot de passe
+        boolean matches = passwordEncoder.matches(motDePasse, utilisateur.getMotDePasse());
+        System.out.println("Comparaison mot de passe: " + matches);
+
+        if (!matches) {
+            System.out.println("Mot de passe incorrect");
             throw new org.springframework.security.authentication.BadCredentialsException("Email ou mot de passe incorrect");
         }
+
+        System.out.println("Authentification réussie");
 
         // Mise à jour de la dernière connexion
         utilisateur.setDerniereConnexion(LocalDateTime.now());
@@ -66,6 +84,7 @@ public class AuthService implements UserDetailsService {
 
         // Génération du token JWT
         String token = jwtUtil.generateToken(utilisateur);
+        System.out.println("Token généré: " + token.substring(0, 20) + "...");
 
         // Préparation de la réponse
         Map<String, Object> response = new HashMap<>();
@@ -86,7 +105,7 @@ public class AuthService implements UserDetailsService {
                 return utilisateurRepository.findByEmailAndActifTrue(email);
             }
         } catch (Exception e) {
-            // Token invalide
+            System.out.println("Token invalide: " + e.getMessage());
         }
         return Optional.empty();
     }
@@ -95,40 +114,41 @@ public class AuthService implements UserDetailsService {
      * Rafraîchissement du token
      */
     public Map<String, Object> refreshToken(String oldToken) {
+        System.out.println("=== REFRESH TOKEN ===");
+
         Optional<Utilisateur> utilisateurOpt = validateTokenAndGetUser(oldToken);
 
         if (utilisateurOpt.isPresent()) {
             Utilisateur utilisateur = utilisateurOpt.get();
+            System.out.println("✅ Token valide pour: " + utilisateur.getEmail());
+
+            // Générer un nouveau token
             String newToken = jwtUtil.generateToken(utilisateur);
 
             Map<String, Object> response = new HashMap<>();
             response.put("token", newToken);
             response.put("utilisateur", mapUtilisateurToResponse(utilisateur));
-            response.put("expiresIn", System.currentTimeMillis() + 86400000);
+            response.put("expiresIn", System.currentTimeMillis() + 86400000); // 24h
 
+            System.out.println("Nouveau token généré");
             return response;
         }
 
+        System.out.println("Token invalide pour refresh");
         throw new RuntimeException("Token invalide ou expiré");
     }
 
     /**
-     * Déconnexion (côté serveur - optionnel)
+     * Déconnexion
      */
     public void logout(String token) {
         // Pour l'instant, pas de blacklist des tokens
         // Le token expirera naturellement après 24h
+        System.out.println(" Déconnexion effectuée");
     }
 
     /**
-     * Obtenir l'utilisateur actuel à partir du token
-     */
-    public Optional<Utilisateur> getCurrentUser(String token) {
-        return validateTokenAndGetUser(token);
-    }
-
-    /**
-     * Mapper l'utilisateur pour la réponse (sans mot de passe) - PUBLIC
+     * Mapper l'utilisateur pour la réponse (sans mot de passe)
      */
     public Map<String, Object> mapUtilisateurToResponse(Utilisateur utilisateur) {
         Map<String, Object> userMap = new HashMap<>();
