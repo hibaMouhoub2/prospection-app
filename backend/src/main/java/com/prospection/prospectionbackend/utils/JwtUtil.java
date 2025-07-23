@@ -1,10 +1,8 @@
 package com.prospection.prospectionbackend.utils;
 
-
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
-import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.prospection.prospectionbackend.entities.Utilisateur;
@@ -17,8 +15,9 @@ import java.util.Date;
 public class JwtUtil {
     @Value("${jwt.secret}")
     private String jwtSecret;
+
     @Value("${jwt.expiration}")
-    private String jwtExpiration;
+    private Long jwtExpiration; // Changé de String à Long
 
     private static final String ISSUER = "prospection-app";
 
@@ -36,12 +35,11 @@ public class JwtUtil {
                 .withClaim("supervisionId", utilisateur.getSupervision() != null ? utilisateur.getSupervision().getId() : null)
                 .withClaim("brancheId", utilisateur.getBranche() != null ? utilisateur.getBranche().getId() : null)
                 .withIssuedAt(new Date())
-                .withExpiresAt(new Date(System.currentTimeMillis() + jwtExpiration))
+                .withExpiresAt(new Date(System.currentTimeMillis() + jwtExpiration)) // Utilisation directe de Long
                 .sign(algorithm);
-
     }
 
-    public DecodedJWT validateToken(String token)throws JWTVerificationException {
+    public DecodedJWT validateToken(String token) throws JWTVerificationException {
         Algorithm algorithm = Algorithm.HMAC256(jwtSecret);
         JWTVerifier verifier = JWT.require(algorithm)
                 .withIssuer(ISSUER)
@@ -49,14 +47,14 @@ public class JwtUtil {
         return verifier.verify(token);
     }
 
-    public String getUsernameFromToken(String token)throws JWTVerificationException {
+    public String getUsernameFromToken(String token) throws JWTVerificationException {
         DecodedJWT jwt = validateToken(token);
         return jwt.getSubject();
     }
 
-    public String getUserIdFromToken(String token)throws JWTVerificationException {
+    public Long getUserIdFromToken(String token) throws JWTVerificationException {
         DecodedJWT jwt = validateToken(token);
-        return jwt.getClaim("userId").asString();
+        return jwt.getClaim("userId").asLong(); // Changé de asString() à asLong()
     }
 
     public String getRoleFromToken(String token) {

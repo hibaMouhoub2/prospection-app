@@ -4,9 +4,6 @@ import com.prospection.prospectionbackend.entities.Utilisateur;
 import com.prospection.prospectionbackend.repositories.UtilisateurRepository;
 import com.prospection.prospectionbackend.utils.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -21,7 +18,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Service d'authentification et gestion des utilisateurs
+ * Service d'authentification et gestion des utilisateurs - VERSION SANS AUTHENTICATIONMANAGER
  */
 @Service
 @Transactional
@@ -36,9 +33,6 @@ public class AuthService implements UserDetailsService {
     @Autowired
     private JwtUtil jwtUtil;
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
-
     /**
      * Méthode requise par UserDetailsService pour Spring Security
      */
@@ -49,18 +43,24 @@ public class AuthService implements UserDetailsService {
     }
 
     /**
-     * Authentification et génération du token JWT
+     * Authentification manuelle et génération du token JWT
      */
     public Map<String, Object> login(String email, String motDePasse) throws AuthenticationException {
-        // Authentification avec Spring Security
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(email, motDePasse)
-        );
+        // Recherche de l'utilisateur
+        Optional<Utilisateur> utilisateurOpt = utilisateurRepository.findByEmailAndActifTrue(email);
 
-        // Récupération de l'utilisateur authentifié
-        Utilisateur utilisateur = (Utilisateur) authentication.getPrincipal();
+        if (utilisateurOpt.isEmpty()) {
+            throw new org.springframework.security.authentication.BadCredentialsException("Email ou mot de passe incorrect");
+        }
 
-        // Mise à jour de la dernière connexion (approche simple)
+        Utilisateur utilisateur = utilisateurOpt.get();
+
+        // Vérification manuelle du mot de passe
+        if (!passwordEncoder.matches(motDePasse, utilisateur.getMotDePasse())) {
+            throw new org.springframework.security.authentication.BadCredentialsException("Email ou mot de passe incorrect");
+        }
+
+        // Mise à jour de la dernière connexion
         utilisateur.setDerniereConnexion(LocalDateTime.now());
         utilisateurRepository.save(utilisateur);
 
@@ -118,7 +118,6 @@ public class AuthService implements UserDetailsService {
     public void logout(String token) {
         // Pour l'instant, pas de blacklist des tokens
         // Le token expirera naturellement après 24h
-        // On pourrait implémenter une blacklist Redis si nécessaire
     }
 
     /**
