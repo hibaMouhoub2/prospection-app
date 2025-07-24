@@ -21,17 +21,26 @@ public class RegistrationController {
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegistrationRequest request) {
         try {
+            // Validation du rôle
+            Role role;
+            try {
+                role = request.getRole() != null ? request.getRole() : Role.AGENT;
+            } catch (IllegalArgumentException e) {
+                AuthResponse response = AuthResponse.error("Rôle invalide: " + request.getRole());
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            }
+
             Utilisateur utilisateur = userRegistrationService.createUser(
                     request.getNom(),
                     request.getPrenom(),
                     request.getEmail(),
                     request.getTelephone() != null ? request.getTelephone() : "0000000000", // Valeur par défaut
                     request.getMotDePasse(),
-                    Role.AGENT // Toujours AGENT pour cette interface
+                    role // Utiliser le rôle sélectionné
             );
 
             AuthResponse response = AuthResponse.success(
-                    "Agent créé avec succès",
+                    "Utilisateur créé avec succès - Rôle: " + role.getDisplayName(),
                     null, // Pas de token lors de l'enregistrement
                     null,
                     null
@@ -44,7 +53,6 @@ public class RegistrationController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
     }
-
     // DTO pour la requête d'enregistrement
     public static class RegistrationRequest {
         private String nom;

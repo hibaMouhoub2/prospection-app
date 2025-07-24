@@ -10,10 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
-/**
- * Service d'enregistrement des utilisateurs
- * Responsabilité: Créer de nouveaux comptes avec mot de passe haché
- */
+
 @Service
 @Transactional
 public class UserRegistrationService {
@@ -24,9 +21,7 @@ public class UserRegistrationService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    /**
-     * Créer un nouvel utilisateur avec mot de passe haché
-     */
+
     public Utilisateur createUser(String nom, String prenom, String email,
                                   String telephone, String motDePasse, Role role) {
 
@@ -47,7 +42,7 @@ public class UserRegistrationService {
         utilisateur.setEmail(email);
         utilisateur.setTelephone(telephone);
 
-        // POINT CRUCIAL : Hacher le mot de passe
+        //  Hacher le mot de passe
         String motDePasseHache = passwordEncoder.encode(motDePasse);
         utilisateur.setMotDePasse(motDePasseHache);
 

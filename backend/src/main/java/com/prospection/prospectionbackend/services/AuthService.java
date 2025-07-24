@@ -120,7 +120,7 @@ public class AuthService implements UserDetailsService {
 
         if (utilisateurOpt.isPresent()) {
             Utilisateur utilisateur = utilisateurOpt.get();
-            System.out.println("✅ Token valide pour: " + utilisateur.getEmail());
+            System.out.println("Token valide pour: " + utilisateur.getEmail());
 
             // Générer un nouveau token
             String newToken = jwtUtil.generateToken(utilisateur);
