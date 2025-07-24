@@ -95,13 +95,13 @@ public class SecurityConfig {
 
                 // Configuration des autorisations
                 .authorizeHttpRequests(authz -> authz
-                        // === ENDPOINTS PUBLICS (plusieurs variantes pour être sûr) ===
+
                         .requestMatchers("/api/auth/login", "/auth/login").permitAll()
                         .requestMatchers("/api/auth/register", "/auth/register").permitAll()
                         .requestMatchers("/api/auth/ping", "/auth/ping").permitAll()
+                        .requestMatchers("/structure/**").permitAll()
 
-                        // === ENDPOINTS DE DÉVELOPPEMENT ===
-                        .requestMatchers("/h2-console/**").permitAll()
+
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/error").permitAll()
 

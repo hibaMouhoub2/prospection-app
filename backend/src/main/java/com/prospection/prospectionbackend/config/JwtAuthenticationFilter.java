@@ -120,6 +120,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 path.equals("/auth/register") ||
                 path.equals("/api/auth/ping") ||
                 path.equals("/auth/ping") ||
+                path.startsWith("/structure/") ||
                 path.startsWith("/h2-console") ||
                 path.equals("/actuator/health") ||
                 path.equals("/error") ||

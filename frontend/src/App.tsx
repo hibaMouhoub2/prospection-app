@@ -2,6 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { LogIn, Eye, EyeOff, AlertCircle, CheckCircle, User, Lock, UserPlus } from 'lucide-react';
 
 // Types
+interface Region {
+    id: number;
+    nom: string;
+    code: string;
+}
+
+interface Supervision {
+    id: number;
+    nom: string;
+    code: string;
+}
+
+interface Branche {
+    id: number;
+    nom: string;
+    code: string;
+}
+
 interface LoginForm {
     email: string;
     motDePasse: string;
@@ -133,7 +151,7 @@ function LoginForm({ onSuccess, onSwitchToRegister }: { onSuccess: (user: User) 
             )}
 
             <div className="space-y-6">
-                {/* Email */}
+
                 <div>
                     <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                         Email
@@ -154,7 +172,7 @@ function LoginForm({ onSuccess, onSwitchToRegister }: { onSuccess: (user: User) 
                     </div>
                 </div>
 
-                {/* Mot de passe */}
+
                 <div>
                     <label htmlFor="motDePasse" className="block text-sm font-medium text-gray-700 mb-2">
                         Mot de passe
@@ -186,7 +204,7 @@ function LoginForm({ onSuccess, onSwitchToRegister }: { onSuccess: (user: User) 
                     </div>
                 </div>
 
-                {/* Bouton de connexion */}
+
                 <button
                     onClick={handleSubmit}
                     disabled={!isFormValid || loading}
@@ -210,7 +228,7 @@ function LoginForm({ onSuccess, onSwitchToRegister }: { onSuccess: (user: User) 
                 </button>
             </div>
 
-            {/* Lien vers l'enregistrement */}
+
             <div className="mt-6 text-center">
                 <p className="text-sm text-gray-600">
                     Pas encore de compte ?{' '}
@@ -223,32 +241,67 @@ function LoginForm({ onSuccess, onSwitchToRegister }: { onSuccess: (user: User) 
                 </p>
             </div>
 
-            {/* Comptes de test */}
-            <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Comptes de test :</h4>
-                <div className="text-xs text-gray-600 space-y-1">
-                    <div>👑 <strong>Admin :</strong> admin@test.com / admin123</div>
-                    <div>👤 <strong>Agent :</strong> test@agent.com / password123</div>
-                </div>
-            </div>
         </div>
     );
 }
 
 // Composant d'enregistrement
 function RegisterForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; onSwitchToLogin: () => void }) {
-    const [formData, setFormData] = useState<RegisterForm>({
+    const [formData, setFormData] = useState({
         nom: '',
         prenom: '',
         email: '',
         motDePasse: '',
-        role: 'AGENT' // Valeur par défaut
+        role: 'AGENT',
+        regionId: '',
+        supervisionId: '',
+        brancheId: ''
     });
+
+    const [regions, setRegions] = useState<Region[]>([]);
+    const [supervisions, setSupervisions] = useState<Supervision[]>([]);
+    const [branches, setBranches] = useState<Branche[]>([]);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error' | null; text: string }>({
         type: null,
         text: ''
     });
+
+
+    useEffect(() => {
+        fetch('/api/structure/regions')
+            .then(res => res.json())
+            .then((data: Region[]) => setRegions(data))
+            .catch(() => setMessage({ type: 'error', text: 'Erreur chargement régions' }));
+    }, []);
+
+    // Charger supervisions quand région change
+    useEffect(() => {
+        if (formData.regionId) {
+            fetch(`/api/structure/supervisions?regionId=${formData.regionId}`)
+                .then(res => res.json())
+                .then((data: Supervision[]) => setSupervisions(data))
+                .catch(() => setMessage({ type: 'error', text: 'Erreur chargement supervisions' }));
+            setFormData(prev => ({ ...prev, supervisionId: '', brancheId: '' }));
+            setBranches([]);
+        } else {
+            setSupervisions([]);
+            setBranches([]);
+        }
+    }, [formData.regionId]);
+
+    // Charger branches quand supervision change
+    useEffect(() => {
+        if (formData.supervisionId) {
+            fetch(`/api/structure/branches?supervisionId=${formData.supervisionId}`)
+                .then(res => res.json())
+                .then((data: Branche[]) => setBranches(data))
+                .catch(() => setMessage({ type: 'error', text: 'Erreur chargement branches' }));
+            setFormData(prev => ({ ...prev, brancheId: '' }));
+        } else {
+            setBranches([]);
+        }
+    }, [formData.supervisionId]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -264,27 +317,46 @@ function RegisterForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; o
             const response = await fetch('/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
+                body: JSON.stringify({
+                    nom: formData.nom,
+                    prenom: formData.prenom,
+                    email: formData.email,
+                    motDePasse: formData.motDePasse,
+                    role: formData.role,
+                    regionId: formData.regionId ? parseInt(formData.regionId) : null,
+                    supervisionId: formData.supervisionId ? parseInt(formData.supervisionId) : null,
+                    brancheId: formData.brancheId ? parseInt(formData.brancheId) : null
+                })
             });
 
             const data: ApiResponse = await response.json();
 
             if (data.success) {
                 setMessage({ type: 'success', text: data.message });
-                setFormData({ nom: '', prenom: '', email: '', motDePasse: '', role: ''});
+                setFormData({
+                    nom: '', prenom: '', email: '', motDePasse: '', role: 'AGENT',
+                    regionId: '', supervisionId: '', brancheId: ''
+                });
                 setTimeout(() => onSuccess(), 1500);
             } else {
                 setMessage({ type: 'error', text: data.message });
             }
-        } catch (error) {
-            setMessage({ type: 'error', text: 'Erreur de connexion au serveur.' });
-            console.error('Erreur serveur :', error);
+        } catch {
+            setMessage({ type: 'error', text: 'Erreur de connexion au serveur' });
         } finally {
             setLoading(false);
         }
     };
 
-    const isFormValid = formData.nom && formData.prenom && formData.email && formData.motDePasse && formData.role;
+    const needsRegion = ['CHEF_ANIMATION_REGIONAL', 'SUPERVISEUR', 'AGENT', 'CHEF_BRANCHE'].includes(formData.role);
+    const needsSupervision = ['SUPERVISEUR', 'AGENT', 'CHEF_BRANCHE'].includes(formData.role);
+    const needsBranche = ['AGENT', 'CHEF_BRANCHE'].includes(formData.role);
+
+    const isFormValid = formData.nom && formData.prenom && formData.email && formData.motDePasse &&
+        (formData.role === 'SIEGE' ||
+            (needsBranche && formData.brancheId) ||
+            (needsSupervision && !needsBranche && formData.supervisionId) ||
+            (needsRegion && !needsSupervision && formData.regionId));
 
     return (
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
@@ -294,7 +366,7 @@ function RegisterForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; o
                     <UserPlus className="w-8 h-8 text-green-600" />
                 </div>
                 <h1 className="text-2xl font-bold text-gray-900">Créer un compte</h1>
-                <p className="text-gray-600 mt-2">Nouvel agent</p>
+                <p className="text-gray-600 mt-2">Nouvel utilisateur</p>
             </div>
 
             {/* Message */}
@@ -312,8 +384,8 @@ function RegisterForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; o
                     <span className={`text-sm ${
                         message.type === 'success' ? 'text-green-700' : 'text-red-700'
                     }`}>
-            {message.text}
-          </span>
+                        {message.text}
+                    </span>
                 </div>
             )}
 
@@ -324,10 +396,10 @@ function RegisterForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; o
                     <input
                         type="text"
                         name="nom"
+                        placeholder="Nom"
                         value={formData.nom}
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                        placeholder="Votre nom"
                     />
                 </div>
 
@@ -337,40 +409,40 @@ function RegisterForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; o
                     <input
                         type="text"
                         name="prenom"
+                        placeholder="Prénom"
                         value={formData.prenom}
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                        placeholder="Votre prénom"
                     />
                 </div>
 
-                {/* Email */}
+
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
                     <input
                         type="email"
                         name="email"
+                        placeholder="votre@email.com"
                         value={formData.email}
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                        placeholder="votre@email.com"
                     />
                 </div>
 
-                {/* Mot de passe */}
+
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Mot de passe *</label>
                     <input
                         type="password"
                         name="motDePasse"
+                        placeholder="Minimum 6 caractères"
                         value={formData.motDePasse}
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                        placeholder="Minimum 6 caractères"
                     />
                 </div>
 
-                {/* Rôle */}
+
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Rôle *</label>
                     <select
@@ -379,18 +451,85 @@ function RegisterForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; o
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white"
                     >
-                        <option value="AGENT">👤 Agent</option>
-                        <option value="CHEF_BRANCHE">🏢 Chef de Branche</option>
-                        <option value="SUPERVISEUR">👨‍💼 Superviseur</option>
-                        <option value="CHEF_ANIMATION_REGIONAL">🌍 Chef Animation Régional</option>
-                        <option value="SIEGE">👑 Siège</option>
+                        <option value="AGENT">Agent</option>
+                        <option value="CHEF_BRANCHE">Chef de Branche</option>
+                        <option value="SUPERVISEUR"> Superviseur</option>
+                        <option value="CHEF_ANIMATION_REGIONAL">Chef Animation Régional</option>
+                        <option value="SIEGE">Siège</option>
                     </select>
-                    <p className="text-xs text-gray-500 mt-1">
-                        Sélectionnez le niveau hiérarchique approprié
-                    </p>
                 </div>
 
-                {/* Bouton */}
+
+                {needsRegion && (
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Région *</label>
+                        <select
+                            name="regionId"
+                            value={formData.regionId}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white"
+                        >
+                            <option value="">Sélectionnez une région</option>
+                            {regions.map(region => (
+                                <option key={region.id} value={region.id.toString()}>
+                                    {region.nom} ({region.code})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+
+
+                {needsSupervision && (
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Supervision *</label>
+                        <select
+                            name="supervisionId"
+                            value={formData.supervisionId}
+                            onChange={handleInputChange}
+                            disabled={!formData.regionId}
+                            className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                                !formData.regionId ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
+                            }`}
+                        >
+                            <option value="">
+                                {!formData.regionId ? 'Sélectionnez d\'abord une région' : 'Sélectionnez une supervision'}
+                            </option>
+                            {supervisions.map(supervision => (
+                                <option key={supervision.id} value={supervision.id.toString()}>
+                                    {supervision.nom} ({supervision.code})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+
+
+                {needsBranche && (
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Branche *</label>
+                        <select
+                            name="brancheId"
+                            value={formData.brancheId}
+                            onChange={handleInputChange}
+                            disabled={!formData.supervisionId}
+                            className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                                !formData.supervisionId ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
+                            }`}
+                        >
+                            <option value="">
+                                {!formData.supervisionId ? 'Sélectionnez d\'abord une supervision' : 'Sélectionnez une branche'}
+                            </option>
+                            {branches.map(branche => (
+                                <option key={branche.id} value={branche.id.toString()}>
+                                    {branche.nom} ({branche.code})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+
+
                 <button
                     onClick={handleSubmit}
                     disabled={!isFormValid || loading}
@@ -414,7 +553,7 @@ function RegisterForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; o
                 </button>
             </div>
 
-            {/* Retour au login */}
+
             <div className="mt-6 text-center">
                 <p className="text-sm text-gray-600">
                     Déjà un compte ?{' '}

@@ -36,7 +36,10 @@ public class RegistrationController {
                     request.getEmail(),
                     request.getTelephone() != null ? request.getTelephone() : "0000000000", // Valeur par défaut
                     request.getMotDePasse(),
-                    role // Utiliser le rôle sélectionné
+                    role,
+                    request.getRegionId(),
+                    request.getSupervisionId(),
+                    request.getBrancheId()
             );
 
             AuthResponse response = AuthResponse.success(
@@ -61,6 +64,9 @@ public class RegistrationController {
         private String telephone;
         private String motDePasse;
         private Role role;
+        private Long regionId;      // NOUVEAU
+        private Long supervisionId; // NOUVEAU
+        private Long brancheId;
 
         // Getters et setters
         public String getNom() { return nom; }
@@ -80,5 +86,11 @@ public class RegistrationController {
 
         public Role getRole() { return role; }
         public void setRole(Role role) { this.role = role; }
+        public Long getRegionId() { return regionId; }
+        public void setRegionId(Long regionId) { this.regionId = regionId; }
+        public Long getSupervisionId() { return supervisionId; }
+        public void setSupervisionId(Long supervisionId) { this.supervisionId = supervisionId; }
+        public Long getBrancheId() { return brancheId; }
+        public void setBrancheId(Long brancheId) { this.brancheId = brancheId; }
     }
 }
