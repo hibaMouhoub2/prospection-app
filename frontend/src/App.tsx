@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { LogIn, Eye, EyeOff, AlertCircle, CheckCircle, User, Lock, UserPlus } from 'lucide-react';
+import { LogIn, Eye, EyeOff, AlertCircle, CheckCircle, User, Lock, UserPlus, Settings, LogOut } from 'lucide-react';
+
+// Import du composant QuestionManagement
+import QuestionManagement from './components/QuestionManagement';
 
 // Types
 interface Region {
@@ -57,7 +60,7 @@ interface User {
     roleDisplayName: string;
 }
 
-// Service d'authentification simple
+// Service d'authentification
 class AuthService {
     private static TOKEN_KEY = 'auth_token';
     private static USER_KEY = 'auth_user';
@@ -133,7 +136,6 @@ function LoginForm({ onSuccess, onSwitchToRegister }: { onSuccess: (user: User) 
 
     return (
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-            {/* Header */}
             <div className="text-center mb-8">
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
                     <LogIn className="w-8 h-8 text-blue-600" />
@@ -142,7 +144,6 @@ function LoginForm({ onSuccess, onSwitchToRegister }: { onSuccess: (user: User) 
                 <p className="text-gray-600 mt-2">Application de prospection</p>
             </div>
 
-            {/* Message d'erreur */}
             {error && (
                 <div className="mb-6 p-4 rounded-lg flex items-center space-x-3 bg-red-50 border border-red-200">
                     <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
@@ -151,7 +152,6 @@ function LoginForm({ onSuccess, onSwitchToRegister }: { onSuccess: (user: User) 
             )}
 
             <div className="space-y-6">
-
                 <div>
                     <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                         Email
@@ -171,7 +171,6 @@ function LoginForm({ onSuccess, onSwitchToRegister }: { onSuccess: (user: User) 
                         />
                     </div>
                 </div>
-
 
                 <div>
                     <label htmlFor="motDePasse" className="block text-sm font-medium text-gray-700 mb-2">
@@ -204,7 +203,6 @@ function LoginForm({ onSuccess, onSwitchToRegister }: { onSuccess: (user: User) 
                     </div>
                 </div>
 
-
                 <button
                     onClick={handleSubmit}
                     disabled={!isFormValid || loading}
@@ -228,7 +226,6 @@ function LoginForm({ onSuccess, onSwitchToRegister }: { onSuccess: (user: User) 
                 </button>
             </div>
 
-
             <div className="mt-6 text-center">
                 <p className="text-sm text-gray-600">
                     Pas encore de compte ?{' '}
@@ -240,7 +237,6 @@ function LoginForm({ onSuccess, onSwitchToRegister }: { onSuccess: (user: User) 
                     </button>
                 </p>
             </div>
-
         </div>
     );
 }
@@ -267,7 +263,6 @@ function RegisterForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; o
         text: ''
     });
 
-
     useEffect(() => {
         fetch('/api/structure/regions')
             .then(res => res.json())
@@ -275,7 +270,6 @@ function RegisterForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; o
             .catch(() => setMessage({ type: 'error', text: 'Erreur chargement régions' }));
     }, []);
 
-    // Charger supervisions quand région change
     useEffect(() => {
         if (formData.regionId) {
             fetch(`/api/structure/supervisions?regionId=${formData.regionId}`)
@@ -290,7 +284,6 @@ function RegisterForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; o
         }
     }, [formData.regionId]);
 
-    // Charger branches quand supervision change
     useEffect(() => {
         if (formData.supervisionId) {
             fetch(`/api/structure/branches?supervisionId=${formData.supervisionId}`)
@@ -360,7 +353,6 @@ function RegisterForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; o
 
     return (
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-            {/* Header */}
             <div className="text-center mb-8">
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
                     <UserPlus className="w-8 h-8 text-green-600" />
@@ -369,7 +361,6 @@ function RegisterForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; o
                 <p className="text-gray-600 mt-2">Nouvel utilisateur</p>
             </div>
 
-            {/* Message */}
             {message.type && (
                 <div className={`mb-6 p-4 rounded-lg flex items-center space-x-3 ${
                     message.type === 'success'
@@ -390,7 +381,6 @@ function RegisterForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; o
             )}
 
             <div className="space-y-4">
-                {/* Nom */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Nom *</label>
                     <input
@@ -403,7 +393,6 @@ function RegisterForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; o
                     />
                 </div>
 
-                {/* Prénom */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Prénom *</label>
                     <input
@@ -415,7 +404,6 @@ function RegisterForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; o
                         className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                     />
                 </div>
-
 
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
@@ -429,7 +417,6 @@ function RegisterForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; o
                     />
                 </div>
 
-
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Mot de passe *</label>
                     <input
@@ -442,7 +429,6 @@ function RegisterForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; o
                     />
                 </div>
 
-
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Rôle *</label>
                     <select
@@ -453,12 +439,11 @@ function RegisterForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; o
                     >
                         <option value="AGENT">Agent</option>
                         <option value="CHEF_BRANCHE">Chef de Branche</option>
-                        <option value="SUPERVISEUR"> Superviseur</option>
+                        <option value="SUPERVISEUR">Superviseur</option>
                         <option value="CHEF_ANIMATION_REGIONAL">Chef Animation Régional</option>
                         <option value="SIEGE">Siège</option>
                     </select>
                 </div>
-
 
                 {needsRegion && (
                     <div>
@@ -478,7 +463,6 @@ function RegisterForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; o
                         </select>
                     </div>
                 )}
-
 
                 {needsSupervision && (
                     <div>
@@ -504,7 +488,6 @@ function RegisterForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; o
                     </div>
                 )}
 
-
                 {needsBranche && (
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Branche *</label>
@@ -529,7 +512,6 @@ function RegisterForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; o
                     </div>
                 )}
 
-
                 <button
                     onClick={handleSubmit}
                     disabled={!isFormValid || loading}
@@ -553,7 +535,6 @@ function RegisterForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; o
                 </button>
             </div>
 
-
             <div className="mt-6 text-center">
                 <p className="text-sm text-gray-600">
                     Déjà un compte ?{' '}
@@ -569,28 +550,168 @@ function RegisterForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; o
     );
 }
 
-// Dashboard simple
+// Dashboard avec navigation
 function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
+    const [currentView, setCurrentView] = useState<'overview' | 'questions'>('overview');
+
+    // Variable définie correctement
+    const showQuestionManagement = user.role === 'SIEGE';
+
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-            <div className="max-w-4xl mx-auto">
-                <div className="bg-white rounded-lg shadow-lg p-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-2xl font-bold text-gray-900">
-                                Bienvenue, {user.prenom} {user.nom}
+        <div className="min-h-screen bg-gray-50">
+            <div className="bg-white shadow-sm border-b">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex justify-between items-center h-16">
+                        <div className="flex items-center space-x-8">
+                            <h1 className="text-xl font-semibold text-gray-900">
+                                Application Prospection
                             </h1>
-                            <p className="text-gray-600">Rôle : {user.roleDisplayName}</p>
-                            <p className="text-gray-600">Email : {user.email}</p>
+
+                            <nav className="hidden md:flex space-x-4">
+                                <button
+                                    onClick={() => setCurrentView('overview')}
+                                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                                        currentView === 'overview'
+                                            ? 'bg-blue-100 text-blue-700'
+                                            : 'text-gray-600 hover:text-gray-900'
+                                    }`}
+                                >
+                                    Vue d'ensemble
+                                </button>
+
+                                {showQuestionManagement && (
+                                    <button
+                                        onClick={() => setCurrentView('questions')}
+                                        className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                                            currentView === 'questions'
+                                                ? 'bg-blue-100 text-blue-700'
+                                                : 'text-gray-600 hover:text-gray-900'
+                                        }`}
+                                    >
+                                        <Settings className="w-4 h-4 inline mr-1" />
+                                        Gestion Questions
+                                    </button>
+                                )}
+                            </nav>
                         </div>
-                        <button
-                            onClick={onLogout}
-                            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md"
-                        >
-                            Déconnexion
-                        </button>
+
+                        <div className="flex items-center space-x-4">
+                            <div className="text-right">
+                                <p className="text-sm font-medium text-gray-900">
+                                    {user.prenom} {user.nom}
+                                </p>
+                                <p className="text-xs text-gray-500">{user.roleDisplayName}</p>
+                            </div>
+                            <button
+                                onClick={onLogout}
+                                className="flex items-center px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
+                            >
+                                <LogOut className="w-4 h-4 mr-1" />
+                                Déconnexion
+                            </button>
+                        </div>
                     </div>
                 </div>
+            </div>
+
+            <div className="flex-1">
+                {currentView === 'overview' && (
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        <div className="bg-white rounded-lg shadow-sm p-6">
+                            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                                Bienvenue, {user.prenom} !
+                            </h2>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white">
+                                    <div className="flex items-center">
+                                        <User className="w-8 h-8 mr-3" />
+                                        <div>
+                                            <h3 className="font-semibold">Profil</h3>
+                                            <p className="text-blue-100 text-sm">{user.email}</p>
+                                            <p className="text-blue-100 text-sm">{user.roleDisplayName}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {user.role === 'SIEGE' && (
+                                    <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-6 text-white">
+                                        <div className="flex items-center">
+                                            <Settings className="w-8 h-8 mr-3" />
+                                            <div>
+                                                <h3 className="font-semibold">Administration</h3>
+                                                <p className="text-green-100 text-sm">Gestion des questions</p>
+                                                <button
+                                                    onClick={() => setCurrentView('questions')}
+                                                    className="mt-2 text-sm bg-white/20 hover:bg-white/30 px-3 py-1 rounded transition-colors"
+                                                >
+                                                    Accéder
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {user.role === 'AGENT' && (
+                                    <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-6 text-white">
+                                        <div className="flex items-center">
+                                            <User className="w-8 h-8 mr-3" />
+                                            <div>
+                                                <h3 className="font-semibold">Prospection</h3>
+                                                <p className="text-purple-100 text-sm">Créer des prospects</p>
+                                                <button className="mt-2 text-sm bg-white/20 hover:bg-white/30 px-3 py-1 rounded transition-colors">
+                                                    Nouveau prospect
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg p-6 text-white">
+                                    <div className="flex items-center">
+                                        <CheckCircle className="w-8 h-8 mr-3" />
+                                        <div>
+                                            <h3 className="font-semibold">Activité</h3>
+                                            <p className="text-orange-100 text-sm">Dernière connexion</p>
+                                            <p className="text-orange-100 text-xs">Aujourd'hui</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                {user.role === 'SIEGE' && (
+                                    <div>
+                                        <h4 className="font-medium text-blue-900 mb-2">Fonctionnalités SIEGE</h4>
+                                        <ul className="text-sm text-blue-700 space-y-1">
+                                            <li>• Créer et gérer les questions du formulaire de prospection</li>
+                                            <li>• Réorganiser l'ordre des questions (drag & drop)</li>
+                                            <li>• Prévisualiser le formulaire tel que vu par les agents</li>
+                                            <li>• Activer/désactiver des questions</li>
+                                        </ul>
+                                    </div>
+                                )}
+
+                                {user.role === 'AGENT' && (
+                                    <div>
+                                        <h4 className="font-medium text-blue-900 mb-2">Fonctionnalités AGENT</h4>
+                                        <ul className="text-sm text-blue-700 space-y-1">
+                                            <li>• Créer de nouveaux prospects</li>
+                                            <li>• Remplir le formulaire de prospection</li>
+                                            <li>• Suivre vos prospects</li>
+                                            <li>• Convertir les prospects en clients</li>
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Utilisation correcte du composant QuestionManagement */}
+                {currentView === 'questions' && showQuestionManagement && (
+                    <QuestionManagement />
+                )}
             </div>
         </div>
     );
@@ -602,7 +723,6 @@ function App() {
     const [user, setUser] = useState<User | null>(null);
 
     useEffect(() => {
-        // Vérifier si déjà connecté
         const token = AuthService.getToken();
         const userData = AuthService.getUser();
 
@@ -625,12 +745,10 @@ function App() {
         setCurrentView('login');
     };
 
-    // Si connecté, afficher le dashboard
     if (user) {
         return <Dashboard user={user} onLogout={handleLogout} />;
     }
 
-    // Sinon afficher login ou register
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
             {currentView === 'login' ? (
