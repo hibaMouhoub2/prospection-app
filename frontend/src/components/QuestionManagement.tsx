@@ -54,7 +54,7 @@ interface CreateQuestionForm {
 
 // Service API
 class QuestionAPI {
-    private static BASE_URL = '/api/questions';
+    private static BASE_URL = '/questions';
 
     private static getAuthHeaders() {
         const token = localStorage.getItem('auth_token');
@@ -208,6 +208,8 @@ function CreateQuestionForm({ onQuestionCreated, questionTypes }: {
             setLoading(false);
         }
     };
+    console.log('questionTypes:', questionTypes);
+    console.log('Object.entries(questionTypes):', Object.entries(questionTypes));
 
 
 

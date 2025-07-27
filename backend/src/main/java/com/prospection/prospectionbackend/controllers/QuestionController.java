@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/questions")
+@RequestMapping("/questions")
 @CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"})
 public class QuestionController {
 

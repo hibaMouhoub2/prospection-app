@@ -99,6 +99,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/login", "/auth/login").permitAll()
                         .requestMatchers("/api/auth/register", "/auth/register").permitAll()
                         .requestMatchers("/api/auth/ping", "/auth/ping").permitAll()
+                        .requestMatchers( "/questions/types").permitAll()
                         .requestMatchers("/structure/**").permitAll()
 
 
