@@ -54,7 +54,7 @@ interface CreateQuestionForm {
 
 // Service API
 class QuestionAPI {
-    private static BASE_URL = '/questions';
+    private static BASE_URL = '/api/questions';
 
     private static getAuthHeaders() {
         const token = localStorage.getItem('auth_token');
@@ -71,12 +71,20 @@ class QuestionAPI {
         const data = await response.json();
         return data.success ? data.questions : [];
     }
+    static async deleteQuestion(id: number) {
+        const response = await fetch(`${this.BASE_URL}/${id}`, {
+            method: 'DELETE',
+            headers: this.getAuthHeaders()
+        });
+        return response.json();
+    }
 
     static async getQuestionTypes(): Promise<Record<string, QuestionType>> {
         const response = await fetch(`${this.BASE_URL}/types`, {
             headers: this.getAuthHeaders()
         });
         const data = await response.json();
+        console.log('Raw response:', data); // Pour débugger
         return data.success ? data.types : {};
     }
 
@@ -163,6 +171,7 @@ function CreateQuestionForm({ onQuestionCreated, questionTypes }: {
             setForm(prev => ({ ...prev, options: newOptions }));
         }
     };
+
 
     const handleSubmit = async () => {
         setLoading(true);
@@ -385,6 +394,7 @@ function QuestionManagement() {
             setStats(statsData);
         } catch (error) {
             console.error('Erreur lors du chargement:', error);
+            setQuestionTypes({});
         } finally {
             setLoading(false);
         }
@@ -402,6 +412,18 @@ function QuestionManagement() {
             }
         } catch (error) {
             console.error('Erreur lors du changement de statut:', error);
+        }
+    };
+    const handleDeleteQuestion = async (id: number) => {
+        if (window.confirm('Êtes-vous sûr de vouloir supprimer cette question définitivement ?')) {
+            try {
+                const result = await QuestionAPI.deleteQuestion(id);
+                if (result.success) {
+                    loadData(); // Recharger la liste
+                }
+            } catch (error) {
+                console.error('Erreur lors de la suppression:', error);
+            }
         }
     };
 
@@ -564,6 +586,13 @@ function QuestionManagement() {
                                                         title={question.actif ? 'Désactiver' : 'Activer'}
                                                     >
                                                         {question.actif ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteQuestion(question.id)}
+                                                        className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                                                        title="Supprimer définitivement"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
                                                     </button>
                                                 </div>
                                             </div>

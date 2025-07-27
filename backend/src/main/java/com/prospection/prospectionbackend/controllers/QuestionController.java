@@ -26,9 +26,7 @@ public class QuestionController {
     @Autowired
     private QuestionService questionService;
 
-    /**
-     * 1. CRÉER UNE QUESTION (SIEGE uniquement)
-     */
+
     @PostMapping
     public ResponseEntity<Map<String, Object>> creerQuestion(@Valid @RequestBody CreerQuestionRequest request) {
         try {
@@ -59,9 +57,7 @@ public class QuestionController {
         }
     }
 
-    /**
-     * 2. RÉCUPÉRER TOUTES LES QUESTIONS (pour admin SIEGE)
-     */
+
     @GetMapping("/admin")
     public ResponseEntity<Map<String, Object>> getAllQuestions() {
         try {
@@ -90,9 +86,7 @@ public class QuestionController {
         }
     }
 
-    /**
-     * 3. RÉCUPÉRER LES QUESTIONS ACTIVES (pour le formulaire de prospection)
-     */
+
     @GetMapping("/formulaire")
     public ResponseEntity<Map<String, Object>> getQuestionsFormulaire() {
         try {
@@ -112,9 +106,7 @@ public class QuestionController {
         }
     }
 
-    /**
-     * 4. APERÇU DU FORMULAIRE (pour prévisualisation)
-     */
+
     @GetMapping("/apercu")
     public ResponseEntity<Map<String, Object>> getApercuFormulaire() {
         try {
@@ -135,9 +127,7 @@ public class QuestionController {
         }
     }
 
-    /**
-     * 5. RÉORGANISER LES QUESTIONS (DRAG & DROP)
-     */
+
     @PutMapping("/reorder")
     public ResponseEntity<Map<String, Object>> reorganiserQuestions(@RequestBody ReorganiserRequest request) {
         try {
@@ -157,9 +147,7 @@ public class QuestionController {
         }
     }
 
-    /**
-     * 6. DÉSACTIVER UNE QUESTION
-     */
+
     @PutMapping("/{id}/desactiver")
     public ResponseEntity<Map<String, Object>> desactiverQuestion(@PathVariable Long id) {
         try {
@@ -179,9 +167,7 @@ public class QuestionController {
         }
     }
 
-    /**
-     * 7. ACTIVER UNE QUESTION
-     */
+
     @PutMapping("/{id}/activer")
     public ResponseEntity<Map<String, Object>> activerQuestion(@PathVariable Long id) {
         try {
@@ -201,9 +187,7 @@ public class QuestionController {
         }
     }
 
-    /**
-     * 8. STATISTIQUES (SIEGE uniquement)
-     */
+
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getStatistiques() {
         try {
@@ -228,9 +212,7 @@ public class QuestionController {
         }
     }
 
-    /**
-     * 9. RÉCUPÉRER UNE QUESTION PAR ID
-     */
+
     @GetMapping("/{id}")
     public ResponseEntity<Map<String, Object>> getQuestionById(@PathVariable Long id) {
         try {
@@ -252,10 +234,28 @@ public class QuestionController {
                     .body(Map.of("success", false, "message", e.getMessage()));
         }
     }
-
     /**
-     * 10. RÉCUPÉRER LES TYPES DE QUESTIONS DISPONIBLES
+     * SUPPRIMER UNE QUESTION DÉFINITIVEMENT
      */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, Object>> supprimerQuestion(@PathVariable Long id) {
+        try {
+            Utilisateur utilisateur = getUtilisateurAuthentifie();
+
+            questionService.supprimerQuestion(id, utilisateur);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Question supprimée définitivement");
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
     @GetMapping("/types")
     public ResponseEntity<Map<String, Object>> getTypesQuestions() {
         try {
@@ -285,9 +285,7 @@ public class QuestionController {
         }
     }
 
-    /**
-     * MÉTHODES UTILITAIRES
-     */
+
     private Utilisateur getUtilisateurAuthentifie() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !(authentication.getPrincipal() instanceof Utilisateur)) {
@@ -325,9 +323,7 @@ public class QuestionController {
         return map;
     }
 
-    /**
-     * DTOs POUR LES REQUÊTES
-     */
+
     public static class CreerQuestionRequest {
         private String question;
         private String description;

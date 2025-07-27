@@ -89,6 +89,29 @@ public class QuestionService {
     public Optional<Question> getQuestionActiveById(Long id) {
         return questionRepository.findByIdAndActifTrue(id);
     }
+    public void supprimerQuestion(Long questionId, Utilisateur createur) {
+        if(createur.getRole() != Role.SIEGE) {
+            throw new AccessDeniedException("Vous ne pouvez pas supprimer une question");
+        }
+
+        Question question = questionRepository.findById(questionId)
+                .orElseThrow(() -> new IllegalArgumentException("Question non trouvée"));
+
+        // Supprimer d'abord les options (cascade devrait le faire automatiquement)
+        questionOptionRepository.deleteByQuestionId(questionId);
+
+        // Supprimer la question
+        questionRepository.delete(question);
+
+        // Recalculer les ordres
+        reCalculerOrdresApresSuppression(question.getOrdre());
+
+        System.out.println("Question supprimée définitivement : ID=" + questionId);
+    }
+
+    private void reCalculerOrdresApresSuppression(Integer ordreSupprime) {
+        questionRepository.decrementOrdreFrom(ordreSupprime);
+    }
 
     public void desactiverQuestion(Long questionId, Utilisateur createur) {
         if(createur.getRole() != Role.SIEGE) {

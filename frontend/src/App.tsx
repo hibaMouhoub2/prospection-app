@@ -691,18 +691,6 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
                                         </ul>
                                     </div>
                                 )}
-
-                                {user.role === 'AGENT' && (
-                                    <div>
-                                        <h4 className="font-medium text-blue-900 mb-2">Fonctionnalités AGENT</h4>
-                                        <ul className="text-sm text-blue-700 space-y-1">
-                                            <li>• Créer de nouveaux prospects</li>
-                                            <li>• Remplir le formulaire de prospection</li>
-                                            <li>• Suivre vos prospects</li>
-                                            <li>• Convertir les prospects en clients</li>
-                                        </ul>
-                                    </div>
-                                )}
                             </div>
                         </div>
                     </div>
