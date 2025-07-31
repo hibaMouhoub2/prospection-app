@@ -1,4 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import NouvelleProspection from './pages/agent/NouvelleProspection';
+import MesProspections from './pages/agent/MesProspections';
+import DetailsProspection from './pages/agent/DetailsProspection';
+import AgentLayout from './components/agent/AgentLayout';
 import { LogIn, Eye, EyeOff, AlertCircle, CheckCircle, User, Lock, UserPlus, Settings, LogOut } from 'lucide-react';
 
 // Import du composant QuestionManagement
@@ -110,7 +114,7 @@ function LoginForm({ onSuccess, onSwitchToRegister }: { onSuccess: (user: User) 
         setError('');
 
         try {
-            const response = await fetch('/api/auth/login', {
+            const response = await fetch('http://localhost:8090/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
@@ -264,7 +268,7 @@ function RegisterForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; o
     });
 
     useEffect(() => {
-        fetch('/api/structure/regions')
+        fetch('http://localhost:8090/api/structure/regions')
             .then(res => res.json())
             .then((data: Region[]) => setRegions(data))
             .catch(() => setMessage({ type: 'error', text: 'Erreur chargement régions' }));
@@ -272,7 +276,7 @@ function RegisterForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; o
 
     useEffect(() => {
         if (formData.regionId) {
-            fetch(`/api/structure/supervisions?regionId=${formData.regionId}`)
+            fetch(`http://localhost:8090/api/structure/supervisions?regionId=${formData.regionId}`)
                 .then(res => res.json())
                 .then((data: Supervision[]) => setSupervisions(data))
                 .catch(() => setMessage({ type: 'error', text: 'Erreur chargement supervisions' }));
@@ -286,7 +290,7 @@ function RegisterForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; o
 
     useEffect(() => {
         if (formData.supervisionId) {
-            fetch(`/api/structure/branches?supervisionId=${formData.supervisionId}`)
+            fetch(`http://localhost:8090/api/structure/branches?supervisionId=${formData.supervisionId}`)
                 .then(res => res.json())
                 .then((data: Branche[]) => setBranches(data))
                 .catch(() => setMessage({ type: 'error', text: 'Erreur chargement branches' }));
@@ -307,7 +311,7 @@ function RegisterForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; o
         setMessage({ type: null, text: '' });
 
         try {
-            const response = await fetch('/api/auth/register', {
+            const response = await fetch('http://localhost:8090/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -551,8 +555,11 @@ function RegisterForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; o
 }
 
 // Dashboard avec navigation
+// Dashboard avec navigation
 function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
-    const [currentView, setCurrentView] = useState<'overview' | 'questions'>('overview');
+    const [currentView, setCurrentView] = useState<'overview' | 'questions' | 'agent'>('overview');
+    const [agentView, setAgentView] = useState<'dashboard' | 'nouvelle' | 'liste' | 'statistiques'>('dashboard');
+    const [selectedProspectionId] = useState<number | null>(null);
 
     // Variable définie correctement
     const showQuestionManagement = user.role === 'SIEGE';
@@ -578,6 +585,20 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
                                 >
                                     Vue d'ensemble
                                 </button>
+
+                                {user.role === 'AGENT' && (
+                                    <button
+                                        onClick={() => setCurrentView('agent')}
+                                        className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                                            currentView === 'agent'
+                                                ? 'bg-blue-100 text-blue-700'
+                                                : 'text-gray-600 hover:text-gray-900'
+                                        }`}
+                                    >
+                                        <User className="w-4 h-4 inline mr-1" />
+                                        Prospection
+                                    </button>
+                                )}
 
                                 {showQuestionManagement && (
                                     <button
@@ -615,6 +636,7 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
             </div>
 
             <div className="flex-1">
+                {/* Vue d'ensemble */}
                 {currentView === 'overview' && (
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                         <div className="bg-white rounded-lg shadow-sm p-6">
@@ -657,11 +679,28 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
                                         <div className="flex items-center">
                                             <User className="w-8 h-8 mr-3" />
                                             <div>
-                                                <h3 className="font-semibold">Prospection</h3>
-                                                <p className="text-purple-100 text-sm">Créer des prospects</p>
-                                                <button className="mt-2 text-sm bg-white/20 hover:bg-white/30 px-3 py-1 rounded transition-colors">
-                                                    Nouveau prospect
-                                                </button>
+                                                <h3 className="font-semibold">Agent</h3>
+                                                <p className="text-purple-100 text-sm">Gestion des prospections</p>
+                                                <div className="mt-2 space-x-2">
+                                                    <button
+                                                        onClick={() => {
+                                                            setCurrentView('agent');
+                                                            setAgentView('nouvelle');
+                                                        }}
+                                                        className="text-sm bg-white/20 hover:bg-white/30 px-3 py-1 rounded transition-colors"
+                                                    >
+                                                        Nouvelle
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            setCurrentView('agent');
+                                                            setAgentView('liste');
+                                                        }}
+                                                        className="text-sm bg-white/20 hover:bg-white/30 px-3 py-1 rounded transition-colors"
+                                                    >
+                                                        Mes prospects
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -691,12 +730,77 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
                                         </ul>
                                     </div>
                                 )}
+
+                                {user.role === 'AGENT' && (
+                                    <div>
+                                        <h4 className="font-medium text-blue-900 mb-2">Fonctionnalités AGENT</h4>
+                                        <ul className="text-sm text-blue-700 space-y-1">
+                                            <li>• Créer de nouvelles prospections</li>
+                                            <li>• Consulter et gérer vos prospects</li>
+                                            <li>• Suivre les relances et conversions</li>
+                                            <li>• Accéder à vos statistiques personnelles</li>
+                                        </ul>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
                 )}
 
-                {/* Utilisation correcte du composant QuestionManagement */}
+                {/* Interface Agent */}
+                {currentView === 'agent' && user.role === 'AGENT' && (
+                    <AgentLayout currentPage={agentView}>
+                        {agentView === 'nouvelle' && <NouvelleProspection />}
+                        {agentView === 'liste' && <MesProspections />}
+                        {agentView === 'statistiques' && selectedProspectionId && (
+                            <DetailsProspection prospectionId={selectedProspectionId} />
+                        )}
+                        {agentView === 'dashboard' && (
+                            <div className="p-6">
+                                <h2 className="text-2xl font-bold mb-4">Tableau de bord Agent</h2>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <button
+                                        onClick={() => setAgentView('nouvelle')}
+                                        className="p-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                    >
+                                        <div className="flex items-center justify-center">
+                                            <User className="w-6 h-6 mr-2" />
+                                            Nouvelle Prospection
+                                        </div>
+                                    </button>
+                                    <button
+                                        onClick={() => setAgentView('liste')}
+                                        className="p-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                                    >
+                                        <div className="flex items-center justify-center">
+                                            <Settings className="w-6 h-6 mr-2" />
+                                            Mes Prospections
+                                        </div>
+                                    </button>
+                                    <button
+                                        onClick={() => setAgentView('statistiques')}
+                                        className="p-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                                    >
+                                        <div className="flex items-center justify-center">
+                                            <Settings className="w-6 h-6 mr-2" />
+                                            Statistiques
+                                        </div>
+                                    </button>
+                                </div>
+
+                                <div className="mt-6 bg-white rounded-lg shadow p-4">
+                                    <h3 className="text-lg font-medium text-gray-900 mb-2">Accès rapide</h3>
+                                    <div className="text-sm text-gray-600">
+                                        <p>• Utilisez le menu de navigation pour accéder aux différentes fonctionnalités</p>
+                                        <p>• Créez une nouvelle prospection ou consultez vos prospects existants</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </AgentLayout>
+                )}
+
+                {/* Gestion des questions pour SIEGE */}
                 {currentView === 'questions' && showQuestionManagement && (
                     <QuestionManagement />
                 )}
@@ -704,7 +808,6 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
         </div>
     );
 }
-
 // App principal
 function App() {
     const [currentView, setCurrentView] = useState<'login' | 'register'>('login');

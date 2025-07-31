@@ -45,7 +45,7 @@ const NouvelleProspection: React.FC = () => {
     const chargerFormulaire = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:8080/prospections/formulaire', {
+            const response = await fetch('http://localhost:8090/api/prospections/formulaire', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -138,7 +138,7 @@ const NouvelleProspection: React.FC = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:8080/prospections', {
+            const response = await fetch('http://localhost:8090/api/prospections', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,

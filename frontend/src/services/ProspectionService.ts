@@ -90,7 +90,7 @@ export interface ApiResponse<T> {
 }
 
 // Configuration de base
-const API_BASE_URL = 'http://localhost:8080';
+const API_BASE_URL = 'http://localhost:8090/api';
 
 class ProspectionService {
     private getAuthHeaders(): Record<string, string> {

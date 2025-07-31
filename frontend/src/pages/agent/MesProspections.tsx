@@ -65,7 +65,7 @@ const MesProspections: React.FC = () => {
     const chargerProspections = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:8080/prospections/mes-prospections', {
+            const response = await fetch('http://localhost:8090/prospections/mes-prospections', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -86,7 +86,7 @@ const MesProspections: React.FC = () => {
     const chargerStatistiques = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:8080/prospections/statistiques', {
+            const response = await fetch('http://localhost:8090/prospections/statistiques', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'

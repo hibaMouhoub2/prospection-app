@@ -57,7 +57,9 @@ public class SecurityConfig {
         // Origins autorisées
         configuration.setAllowedOriginPatterns(Arrays.asList(
                 "http://localhost:5173",
-                "http://localhost:3000"
+                "http://localhost:3000",
+                "http://127.0.0.1:5173",
+                "http://127.0.0.1:3000"
         ));
 
         // Méthodes autorisées
@@ -76,19 +78,17 @@ public class SecurityConfig {
         return source;
     }
 
-    /**
-     * Configuration de la chaîne de filtres de sécurité
-     */
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // Désactiver CSRF (API REST avec JWT)
+
                 .csrf(csrf -> csrf.disable())
 
-                // Configuration CORS
+
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-                // Session stateless (JWT)
+
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
@@ -101,6 +101,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/ping", "/auth/ping").permitAll()
                         .requestMatchers( "/questions/types").permitAll()
                         .requestMatchers("/structure/**").permitAll()
+                        .requestMatchers("/api/test/public", "/test/public").permitAll()
+                        .requestMatchers("/prospections/formulaire").permitAll()
 
 
                         .requestMatchers("/actuator/health").permitAll()

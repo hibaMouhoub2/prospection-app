@@ -64,7 +64,7 @@ const DetailsProspection: React.FC<DetailsProspectionProps> = ({ prospectionId }
 
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:8080/prospections/${prospectionId}`, {
+            const response = await fetch(`http://localhost:8090/prospections/${prospectionId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'

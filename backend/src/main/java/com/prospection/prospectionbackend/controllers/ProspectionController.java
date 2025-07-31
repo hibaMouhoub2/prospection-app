@@ -21,19 +21,12 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/prospections")
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"})
+@CrossOrigin(origins = "http://localhost:5173")
 public class ProspectionController {
 
     @Autowired
     private ProspectionService prospectionService;
 
-    // ===============================
-    // REMPLISSAGE ET ENREGISTREMENT
-    // ===============================
-
-    /**
-     * Récupère le formulaire vide pour une nouvelle prospection
-     */
     @GetMapping("/formulaire")
     public ResponseEntity<Map<String, Object>> getFormulaireVide() {
         try {
@@ -54,9 +47,7 @@ public class ProspectionController {
         }
     }
 
-    /**
-     * Crée une nouvelle prospection avec les réponses du formulaire
-     */
+
     @PostMapping
     public ResponseEntity<Map<String, Object>> creerProspection(@Valid @RequestBody CreerProspectionRequest request) {
         try {
@@ -108,13 +99,7 @@ public class ProspectionController {
         }
     }
 
-    // ===============================
-    // CONSULTATION
-    // ===============================
 
-    /**
-     * Récupère les prospections de l'agent connecté
-     */
     @GetMapping("/mes-prospections")
     public ResponseEntity<Map<String, Object>> getMesProspections() {
         try {
