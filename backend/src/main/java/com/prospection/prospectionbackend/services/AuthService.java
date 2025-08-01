@@ -13,17 +13,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
-/**
- * Service d'authentification - Version propre
- * Responsabilités:
- * - Authentification des utilisateurs
- * - Génération des tokens JWT
- * - Gestion des sessions
- */
+
 @Service
 @Transactional
 public class AuthService implements UserDetailsService {
@@ -37,18 +29,18 @@ public class AuthService implements UserDetailsService {
     @Autowired
     private JwtUtil jwtUtil;
 
-    /**
-     * Méthode requise par UserDetailsService
-     */
+    @Autowired
+    private TokenBlacklistService tokenBlacklistService;
+
+
+
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         return utilisateurRepository.findByEmailAndActifTrue(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Utilisateur non trouvé: " + email));
     }
 
-    /**
-     * Authentification et génération du token
-     */
+
     public Map<String, Object> login(String email, String motDePasse) throws AuthenticationException {
         System.out.println("=== LOGIN ATTEMPT ===");
         System.out.println("Email: " + email);
@@ -84,20 +76,54 @@ public class AuthService implements UserDetailsService {
 
         // Génération du token JWT
         String token = jwtUtil.generateToken(utilisateur);
+        String refreshToken = jwtUtil.generateRefreshToken(utilisateur);
         System.out.println("Token généré: " + token.substring(0, 20) + "...");
 
         // Préparation de la réponse
         Map<String, Object> response = new HashMap<>();
-        response.put("token", token);
+        response.put("accessToken", token);
+        response.put("refreshToken", refreshToken);
         response.put("utilisateur", mapUtilisateurToResponse(utilisateur));
-        response.put("expiresIn", System.currentTimeMillis() + 86400000); // 24h
+        response.put("expiresIn", System.currentTimeMillis() + 900000); // 15 min
 
         return response;
     }
 
-    /**
-     * Validation du token et récupération de l'utilisateur
-     */
+
+    public Map<String, Object> renewAccessToken(String refreshToken) {
+        try {
+            // Vérifier que c'est bien un refresh token
+            if (!jwtUtil.isRefreshToken(refreshToken)) {
+                throw new RuntimeException("Token invalide");
+            }
+
+
+
+            // Récupérer l'utilisateur
+            String email = jwtUtil.getUsernameFromToken(refreshToken);
+            Optional<Utilisateur> utilisateurOpt = utilisateurRepository.findByEmailAndActifTrue(email);
+
+            if (utilisateurOpt.isEmpty()) {
+                throw new RuntimeException("Utilisateur non trouvé");
+            }
+
+            Utilisateur utilisateur = utilisateurOpt.get();
+
+            // Générer nouveau access token
+            String newAccessToken = jwtUtil.generateToken(utilisateur);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("accessToken", newAccessToken);
+            response.put("expiresIn", 900000); // 15 minutes
+
+            return response;
+
+        } catch (Exception e) {
+            throw new RuntimeException("Impossible de renouveler le token: " + e.getMessage());
+        }
+    }
+
+
     public Optional<Utilisateur> validateTokenAndGetUser(String token) {
         try {
             String email = jwtUtil.getUsernameFromToken(token);
@@ -110,9 +136,7 @@ public class AuthService implements UserDetailsService {
         return Optional.empty();
     }
 
-    /**
-     * Rafraîchissement du token
-     */
+
     public Map<String, Object> refreshToken(String oldToken) {
         System.out.println("=== REFRESH TOKEN ===");
 
@@ -138,13 +162,12 @@ public class AuthService implements UserDetailsService {
         throw new RuntimeException("Token invalide ou expiré");
     }
 
-    /**
-     * Déconnexion
-     */
-    public void logout(String token) {
-        // Pour l'instant, pas de blacklist des tokens
-        // Le token expirera naturellement après 24h
-        System.out.println(" Déconnexion effectuée");
+
+
+
+    public void logout(String accessToken, String refreshToken) {
+        tokenBlacklistService.blacklistTokens(accessToken, refreshToken);
+        System.out.println("Tokens ajoutés à la blacklist - Déconnexion effective");
     }
 
     /**

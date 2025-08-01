@@ -2,6 +2,8 @@ package com.prospection.prospectionbackend.config;
 
 import com.prospection.prospectionbackend.entities.Utilisateur;
 import com.prospection.prospectionbackend.repositories.UtilisateurRepository;
+import com.prospection.prospectionbackend.services.AuthService;
+import com.prospection.prospectionbackend.services.TokenBlacklistService;
 import com.prospection.prospectionbackend.utils.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -17,10 +19,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.Optional;
 
-/**
- * Filtre JWT - Version sans dépendance circulaire
- * Utilise directement le repository au lieu du service AuthService
- */
+
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -29,15 +28,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Autowired
     private UtilisateurRepository utilisateurRepository;
+    @Autowired
+    private AuthService authService;
 
+    @Autowired
+    private TokenBlacklistService tokenBlacklistService;
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
-        // Debug - voir quelles requêtes passent par le filtre
-        String path = request.getRequestURI();
-        System.out.println("JWT Filter - URI: " + path + " | Method: " + request.getMethod());
 
         // Si c'est un endpoint public, passer sans vérification
         if (shouldNotFilter(request)) {
@@ -55,6 +55,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // Extraction du token JWT
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             jwtToken = authorizationHeader.substring(7);
+            if (tokenBlacklistService.isTokenBlacklisted(jwtToken)) {
+                System.out.println("Token blacklisté - accès refusé");
+                filterChain.doFilter(request, response);
+                return;
+            }
             System.out.println("Token extrait: " + jwtToken.substring(0, Math.min(20, jwtToken.length())) + "...");
 
             try {

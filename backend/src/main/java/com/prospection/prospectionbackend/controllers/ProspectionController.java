@@ -51,6 +51,16 @@ public class ProspectionController {
     @PostMapping
     public ResponseEntity<Map<String, Object>> creerProspection(@Valid @RequestBody CreerProspectionRequest request) {
         try {
+            System.out.println("=== DÉBUT DEBUG CRÉATION PROSPECTION ===");
+            System.out.println("Type prospection: " + request.getTypeProspection());
+            System.out.println("Reponses reçues: " + request.getReponses());
+            System.out.println("Taille des réponses: " + (request.getReponses() != null ? request.getReponses().size() : "null"));
+
+            if (request.getReponses() != null) {
+                for (Map.Entry<Long, String> entry : request.getReponses().entrySet()) {
+                    System.out.println("Question ID: " + entry.getKey() + " (Type: " + entry.getKey().getClass().getSimpleName() + "), Valeur: " + entry.getValue());
+                }
+            }
             Utilisateur utilisateur = getUtilisateurAuthentifie();
 
             // Validation des données de base

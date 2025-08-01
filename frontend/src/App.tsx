@@ -43,7 +43,8 @@ interface RegisterForm {
 interface ApiResponse {
     success: boolean;
     message: string;
-    token?: string;
+    accessToken?: string;
+    refreshToken?: string;
     utilisateur?: {
         id: number;
         nom: string;
@@ -66,15 +67,20 @@ interface User {
 
 // Service d'authentification
 class AuthService {
-    private static TOKEN_KEY = 'auth_token';
+    private static ACCESS_TOKEN_KEY = 'access_token';    // NOUVEAU
+    private static REFRESH_TOKEN_KEY = 'refresh_token';  // NOUVEAU
     private static USER_KEY = 'auth_user';
 
-    static saveToken(token: string): void {
-        localStorage.setItem(this.TOKEN_KEY, token);
+    static saveTokens(accessToken: string, refreshToken: string): void {
+        localStorage.setItem(this.ACCESS_TOKEN_KEY, accessToken);
+        localStorage.setItem(this.REFRESH_TOKEN_KEY, refreshToken);
     }
 
-    static getToken(): string | null {
-        return localStorage.getItem(this.TOKEN_KEY);
+    static getAccessToken(): string | null {
+        return localStorage.getItem(this.ACCESS_TOKEN_KEY);
+    }
+    static getRefreshToken(): string | null {
+        return localStorage.getItem(this.REFRESH_TOKEN_KEY);
     }
 
     static saveUser(user: User): void {
@@ -86,13 +92,28 @@ class AuthService {
         return user ? JSON.parse(user) : null;
     }
 
-    static logout(): void {
-        localStorage.removeItem(this.TOKEN_KEY);
+    static async logout(): Promise<void> {
+        const accessToken = this.getAccessToken();
+        const refreshToken = this.getRefreshToken();
+
+        try {
+            await fetch('http://localhost:8090/api/auth/logout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ accessToken, refreshToken })
+            });
+        } catch (error) {
+            console.log('Erreur logout:', error);
+        }
+
+        localStorage.removeItem(this.ACCESS_TOKEN_KEY);
+        localStorage.removeItem(this.REFRESH_TOKEN_KEY);
         localStorage.removeItem(this.USER_KEY);
     }
 
+
     static isAuthenticated(): boolean {
-        return !!this.getToken();
+        return !!this.getAccessToken();
     }
 }
 
@@ -122,8 +143,8 @@ function LoginForm({ onSuccess, onSwitchToRegister }: { onSuccess: (user: User) 
 
             const data: ApiResponse = await response.json();
 
-            if (data.success && data.token && data.utilisateur) {
-                AuthService.saveToken(data.token);
+            if (data.success && data.accessToken && data.refreshToken && data.utilisateur) {
+                AuthService.saveTokens(data.accessToken, data.refreshToken);
                 AuthService.saveUser(data.utilisateur);
                 onSuccess(data.utilisateur);
             } else {
@@ -554,8 +575,7 @@ function RegisterForm({ onSuccess, onSwitchToLogin }: { onSuccess: () => void; o
     );
 }
 
-// Dashboard avec navigation
-// Dashboard avec navigation
+
 function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
     const [currentView, setCurrentView] = useState<'overview' | 'questions' | 'agent'>('overview');
     const [agentView, setAgentView] = useState<'dashboard' | 'nouvelle' | 'liste' | 'statistiques'>('dashboard');
@@ -813,13 +833,21 @@ function App() {
     const [currentView, setCurrentView] = useState<'login' | 'register'>('login');
     const [user, setUser] = useState<User | null>(null);
 
+
+
     useEffect(() => {
-        const token = AuthService.getToken();
+        const token = AuthService.getAccessToken();
         const userData = AuthService.getUser();
 
         if (token && userData) {
             setUser(userData);
         }
+    }, []);
+
+
+    useEffect(() => {
+        // L'intercepteur est déjà créé dans la fonction, pas besoin de le stocker
+        console.log('App initialisé');
     }, []);
 
     const handleLoginSuccess = (userData: User) => {
@@ -830,8 +858,8 @@ function App() {
         setCurrentView('login');
     };
 
-    const handleLogout = () => {
-        AuthService.logout();
+    const handleLogout = async () => {
+        await AuthService.logout();
         setUser(null);
         setCurrentView('login');
     };

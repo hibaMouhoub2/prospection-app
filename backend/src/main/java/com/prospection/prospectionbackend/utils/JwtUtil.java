@@ -17,7 +17,10 @@ public class JwtUtil {
     private String jwtSecret;
 
     @Value("${jwt.expiration}")
-    private Long jwtExpiration; // Changé de String à Long
+    private Long jwtExpiration;
+
+    @Value("${jwt.refresh-expiration}")
+    private Long jwtRefreshExpiration;
 
     private static final String ISSUER = "prospection-app";
 
@@ -37,6 +40,26 @@ public class JwtUtil {
                 .withIssuedAt(new Date())
                 .withExpiresAt(new Date(System.currentTimeMillis() + jwtExpiration)) // Utilisation directe de Long
                 .sign(algorithm);
+    }
+    public String generateRefreshToken(Utilisateur utilisateur) {
+        Algorithm algorithm = Algorithm.HMAC256(jwtSecret);
+
+        return JWT.create()
+                .withIssuer(ISSUER)
+                .withSubject(utilisateur.getEmail())
+                .withClaim("userId", utilisateur.getId())
+                .withClaim("type", "refresh") // Marquer comme refresh token
+                .withIssuedAt(new Date())
+                .withExpiresAt(new Date(System.currentTimeMillis() + jwtRefreshExpiration))
+                .sign(algorithm);
+    }
+    public boolean isRefreshToken(String token) {
+        try {
+            DecodedJWT jwt = validateToken(token);
+            return "refresh".equals(jwt.getClaim("type").asString());
+        } catch (JWTVerificationException e) {
+            return false;
+        }
     }
 
     public DecodedJWT validateToken(String token) throws JWTVerificationException {

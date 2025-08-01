@@ -95,7 +95,7 @@ public class Reponse {
         // Validation selon le type de question
         switch (question.getType()) {
             case TEXT:
-
+                return valeur != null && !valeur.trim().isEmpty();
             case NUMBER:
                 try {
                     if (valeur != null && !valeur.trim().isEmpty()) {

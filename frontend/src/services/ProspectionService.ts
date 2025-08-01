@@ -94,7 +94,7 @@ const API_BASE_URL = 'http://localhost:8090/api';
 
 class ProspectionService {
     private getAuthHeaders(): Record<string, string> {
-        const token = localStorage.getItem('auth_token');
+        const token = localStorage.getItem('access_token');
         return {
             'Content-Type': 'application/json',
             ...(token ? { 'Authorization': `Bearer ${token}` } : {})
@@ -119,10 +119,47 @@ class ProspectionService {
         }
     }
 
-    // Récupérer le formulaire vide
+
+
+    private async fetchWithRetry(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+        let response = await fetch(input, init);
+
+        if (response.status === 401 && !input.toString().includes('/auth/')) {
+            try {
+                const refreshToken = localStorage.getItem('refresh_token');
+                if (refreshToken) {
+                    const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ refreshToken })
+                    });
+
+                    if (refreshResponse.ok) {
+                        const refreshData = await refreshResponse.json();
+                        localStorage.setItem('access_token', refreshData.token);
+
+                        // Retry avec nouveau token
+                        const newInit = {
+                            ...init,
+                            headers: {
+                                ...init?.headers,
+                                'Authorization': `Bearer ${refreshData.token}`
+                            }
+                        };
+                        response = await fetch(input, newInit);
+                    }
+                }
+            } catch (error) {
+                console.log('Erreur refresh:', error);
+            }
+        }
+
+        return response;
+    }
+
     async getFormulaire(): Promise<ApiResponse<Formulaire>> {
         try {
-            const response = await fetch(`${API_BASE_URL}/prospections/formulaire`, {
+            const response = await this.fetchWithRetry(`${API_BASE_URL}/prospections/formulaire`, {
                 method: 'GET',
                 headers: this.getAuthHeaders()
             });
@@ -136,11 +173,10 @@ class ProspectionService {
             };
         }
     }
-
-    // Créer une nouvelle prospection
+        // Créer une nouvelle prospection
     async creerProspection(request: CreerProspectionRequest): Promise<ApiResponse<{ prospection: Prospection; id: number }>> {
         try {
-            const response = await fetch(`${API_BASE_URL}/prospections`, {
+            const response = await this.fetchWithRetry(`${API_BASE_URL}/prospections`, {
                 method: 'POST',
                 headers: this.getAuthHeaders(),
                 body: JSON.stringify(request)
@@ -159,7 +195,7 @@ class ProspectionService {
     // Récupérer les prospections de l'agent
     async getMesProspections(): Promise<ApiResponse<{ prospections: Prospection[]; total: number }>> {
         try {
-            const response = await fetch(`${API_BASE_URL}/prospections/mes-prospections`, {
+            const response = await this.fetchWithRetry(`${API_BASE_URL}/prospections/mes-prospections`, {
                 method: 'GET',
                 headers: this.getAuthHeaders()
             });
@@ -177,7 +213,7 @@ class ProspectionService {
     // Récupérer les détails d'une prospection
     async getProspectionDetails(id: number): Promise<ApiResponse<ProspectionDetails>> {
         try {
-            const response = await fetch(`${API_BASE_URL}/prospections/${id}`, {
+            const response = await this.fetchWithRetry(`${API_BASE_URL}/prospections/${id}`, {
                 method: 'GET',
                 headers: this.getAuthHeaders()
             });
@@ -195,7 +231,7 @@ class ProspectionService {
     // Récupérer les statistiques de l'agent
     async getStatistiques(): Promise<ApiResponse<{ statistiques: Statistiques }>> {
         try {
-            const response = await fetch(`${API_BASE_URL}/prospections/statistiques`, {
+            const response = await this.fetchWithRetry(`${API_BASE_URL}/prospections/statistiques`, {
                 method: 'GET',
                 headers: this.getAuthHeaders()
             });
@@ -213,7 +249,7 @@ class ProspectionService {
     // Vérifier si un prospect existe déjà
     async verifierDoublon(telephone: string): Promise<ApiResponse<{ existe: boolean; message: string }>> {
         try {
-            const response = await fetch(`${API_BASE_URL}/prospections/verifier-doublon?telephone=${encodeURIComponent(telephone)}`, {
+            const response = await this.fetchWithRetry(`${API_BASE_URL}/prospections/verifier-doublon?telephone=${encodeURIComponent(telephone)}`, {
                 method: 'GET',
                 headers: this.getAuthHeaders()
             });

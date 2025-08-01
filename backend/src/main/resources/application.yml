@@ -7,14 +7,14 @@ spring:
   application:
     name: prospection-backend
 
-  # Database Configuration
+
   datasource:
     url: jdbc:postgresql://localhost:5432/prospection_db
     username: postgres
     password: root
     driver-class-name: org.postgresql.Driver
 
-  # JPA Configuration
+
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
@@ -24,12 +24,13 @@ spring:
       hibernate:
         format_sql: true
 
-# JWT Configuration
+
 jwt:
   secret: mySecretKey123456789012345678901234567890
-  expiration: 86400000 # 24 hours in milliseconds
+  expiration: 900000 # 15 min
+  refresh-expiration: 604800000 #7 jours
 
-# CORS Configuration
+
 cors:
   allowed-origins:
     - http://localhost:5173
@@ -38,7 +39,7 @@ cors:
   allowed-headers: "*"
   allow-credentials: true
 
-# Logging
+
 logging:
   level:
     com.prospection: DEBUG

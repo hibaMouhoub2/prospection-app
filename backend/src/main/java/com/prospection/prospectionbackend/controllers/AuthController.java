@@ -117,12 +117,12 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<AuthResponse> logout(@RequestHeader("Authorization") String authorizationHeader) {
+    public ResponseEntity<AuthResponse> logout(@RequestBody Map<String, String> request) {
         try {
-            String token = jwtUtil.extractTokenFromHeader(authorizationHeader);
-            if (token != null) {
-                authService.logout(token);
-            }
+            String accessToken = request.get("accessToken");
+            String refreshToken = request.get("refreshToken");
+
+            authService.logout(accessToken, refreshToken);
 
             AuthResponse response = AuthResponse.success("Déconnexion réussie", null, null, null);
             return ResponseEntity.ok(response);
@@ -130,6 +130,34 @@ public class AuthController {
         } catch (Exception e) {
             AuthResponse response = AuthResponse.error("Erreur lors de la déconnexion");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    //renouveler access token
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refreshToken(@RequestBody Map<String, String> request) {
+        try {
+            String refreshToken = request.get("refreshToken");
+
+            if (refreshToken == null) {
+                return ResponseEntity.badRequest()
+                        .body(AuthResponse.error("Refresh token manquant"));
+            }
+
+            Map<String, Object> result = authService.renewAccessToken(refreshToken);
+
+            AuthResponse response = AuthResponse.success(
+                    "Token renouvelé avec succès",
+                    (String) result.get("accessToken"),
+                    null, // Pas besoin de renvoyer l'utilisateur
+                    (Long) result.get("expiresIn")
+            );
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(AuthResponse.error("Impossible de renouveler le token"));
         }
     }
 
