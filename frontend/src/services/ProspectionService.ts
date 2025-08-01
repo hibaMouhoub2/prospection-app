@@ -94,7 +94,7 @@ const API_BASE_URL = 'http://localhost:8090/api';
 
 class ProspectionService {
     private getAuthHeaders(): Record<string, string> {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('auth_token');
         return {
             'Content-Type': 'application/json',
             ...(token ? { 'Authorization': `Bearer ${token}` } : {})

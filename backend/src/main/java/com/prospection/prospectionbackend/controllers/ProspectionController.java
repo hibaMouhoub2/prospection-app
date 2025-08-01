@@ -91,9 +91,13 @@ public class ProspectionController {
             return ResponseEntity.ok(response);
 
         } catch (IllegalArgumentException e) {
+            System.out.println("ERREUR dans creerProspection: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest()
                     .body(Map.of("success", false, "message", e.getMessage()));
         } catch (Exception e) {
+            System.out.println("ERREUR dans creerProspection: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("success", false, "message", "Erreur lors de la création: " + e.getMessage()));
         }
