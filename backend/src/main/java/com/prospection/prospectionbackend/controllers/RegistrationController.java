@@ -46,7 +46,7 @@ public class RegistrationController {
                     "Utilisateur créé avec succès - Rôle: " + role.getDisplayName(),
                     null, // Pas de token lors de l'enregistrement
                     null,
-                    null
+                    null, null
             );
 
             return ResponseEntity.ok(response);

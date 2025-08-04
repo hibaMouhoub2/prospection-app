@@ -34,7 +34,10 @@ public class AuthController {
             Map<String, Object> authResult = authService.login(loginRequest.getEmail(), loginRequest.getMotDePasse());
 
             // Extraction des données
-            String token = (String) authResult.get("token");
+            String token = (String) authResult.get("accessToken");
+            String refreshToken = (String) authResult.get("refreshToken");
+            System.out.println("AuthResult keys: " + authResult.keySet());
+            System.out.println("Token récupéré: " + token);
             Map<String, Object> utilisateur = (Map<String, Object>) authResult.get("utilisateur");
             Long expiresIn = (Long) authResult.get("expiresIn");
 
@@ -42,6 +45,7 @@ public class AuthController {
             AuthResponse response = AuthResponse.success(
                     "Connexion réussie",
                     token,
+                    refreshToken,
                     utilisateur,
                     expiresIn
             );
@@ -97,13 +101,14 @@ public class AuthController {
 
             Map<String, Object> refreshResult = authService.refreshToken(token);
 
-            String newToken = (String) refreshResult.get("token");
+            String newToken = (String) refreshResult.get("token");  // ← "token" au lieu de "accessToken"
             Map<String, Object> utilisateur = (Map<String, Object>) refreshResult.get("utilisateur");
             Long expiresIn = (Long) refreshResult.get("expiresIn");
 
             AuthResponse response = AuthResponse.success(
                     "Token rafraîchi avec succès",
                     newToken,
+                    null,        // ← refreshToken est null pour cette opération
                     utilisateur,
                     expiresIn
             );
@@ -115,16 +120,21 @@ public class AuthController {
                     .body(AuthResponse.error("Impossible de rafraîchir le token"));
         }
     }
-
     @PostMapping("/logout")
     public ResponseEntity<AuthResponse> logout(@RequestBody Map<String, String> request) {
         try {
             String accessToken = request.get("accessToken");
-            String refreshToken = request.get("refreshToken");
+            String refreshTokenValue = request.get("refreshToken");
 
-            authService.logout(accessToken, refreshToken);
+            authService.logout(accessToken, refreshTokenValue);
 
-            AuthResponse response = AuthResponse.success("Déconnexion réussie", null, null, null);
+            AuthResponse response = AuthResponse.success(
+                    "Déconnexion réussie",
+                    null,    // accessToken
+                    null,    // refreshToken
+                    null,    // utilisateur
+                    null     // expiresIn
+            );
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
@@ -133,33 +143,6 @@ public class AuthController {
         }
     }
 
-    //renouveler access token
-    @PostMapping("/refresh")
-    public ResponseEntity<AuthResponse> refreshToken(@RequestBody Map<String, String> request) {
-        try {
-            String refreshToken = request.get("refreshToken");
-
-            if (refreshToken == null) {
-                return ResponseEntity.badRequest()
-                        .body(AuthResponse.error("Refresh token manquant"));
-            }
-
-            Map<String, Object> result = authService.renewAccessToken(refreshToken);
-
-            AuthResponse response = AuthResponse.success(
-                    "Token renouvelé avec succès",
-                    (String) result.get("accessToken"),
-                    null, // Pas besoin de renvoyer l'utilisateur
-                    (Long) result.get("expiresIn")
-            );
-
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(AuthResponse.error("Impossible de renouveler le token"));
-        }
-    }
 
     @GetMapping("/ping")
     public ResponseEntity<Map<String, String>> ping() {

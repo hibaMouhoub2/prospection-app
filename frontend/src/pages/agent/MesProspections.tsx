@@ -64,8 +64,8 @@ const MesProspections: React.FC = () => {
 
     const chargerProspections = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:8090/prospections/mes-prospections', {
+            const token = localStorage.getItem('accessToken');
+            const response = await fetch('http://localhost:8090/api/prospections/mes-prospections', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
