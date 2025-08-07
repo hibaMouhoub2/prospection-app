@@ -33,8 +33,8 @@ const AgentLayout: React.FC<AgentLayoutProps> = ({ children, currentPage = 'dash
 
     useEffect(() => {
         // Charger les informations utilisateur depuis le localStorage ou API
-        const token = localStorage.getItem('token');
-        const user = localStorage.getItem('user');
+        const token = localStorage.getItem('access_token');
+        const user = localStorage.getItem('auth_user');
 
         // Utiliser le token pour valider la session
         if (token && user) {
@@ -74,8 +74,9 @@ const AgentLayout: React.FC<AgentLayoutProps> = ({ children, currentPage = 'dash
     ];
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('auth_user');
         window.location.href = '/login';
     };
 

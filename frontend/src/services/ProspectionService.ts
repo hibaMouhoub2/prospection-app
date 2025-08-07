@@ -128,29 +128,47 @@ class ProspectionService {
             try {
                 const refreshToken = localStorage.getItem('refresh_token');
                 if (refreshToken) {
+
                     const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ refreshToken })
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${refreshToken}`  // ← Utiliser le header
+                        }
+
                     });
 
                     if (refreshResponse.ok) {
                         const refreshData = await refreshResponse.json();
-                        localStorage.setItem('access_token', refreshData.token);
 
-                        // Retry avec nouveau token
+
+                        const newToken = refreshData.token || refreshData.accessToken;
+                        localStorage.setItem('access_token', newToken);
+
+
                         const newInit = {
                             ...init,
                             headers: {
                                 ...init?.headers,
-                                'Authorization': `Bearer ${refreshData.token}`
+                                'Authorization': `Bearer ${newToken}`
                             }
                         };
                         response = await fetch(input, newInit);
+                    } else {
+
+                        console.log('Refresh token expiré - redirection vers login');
+                        localStorage.removeItem('access_token');
+                        localStorage.removeItem('refresh_token');
+                        localStorage.removeItem('auth_user');
+                        // window.location.href = '/login'; //
                     }
                 }
             } catch (error) {
                 console.log('Erreur refresh:', error);
+
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('refresh_token');
+                localStorage.removeUser('auth_user');
             }
         }
 

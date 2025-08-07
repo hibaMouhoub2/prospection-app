@@ -13,10 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -31,18 +29,7 @@ public class ProspectionService {
     @Autowired
     private QuestionRepository questionRepository;
 
-    // ===============================
-    // CRÉATION ET ENREGISTREMENT
-    // ===============================
 
-    /**
-     * Crée une nouvelle prospection avec ses réponses
-     * @param typeProspection Type de prospection
-     * @param reponses Map<QuestionId, Valeur> des réponses
-     * @param commentaire Commentaire optionnel
-     * @param createur L'agent qui crée la prospection
-     * @return La prospection créée
-     */
     public Prospection creerProspection(
             TypeProspection typeProspection,
             Map<Long, String> reponses,
@@ -236,7 +223,18 @@ public class ProspectionService {
             throw new AccessDeniedException("Seuls les agents peuvent consulter leurs prospections");
         }
 
-        return prospectionRepository.findByAgentIdOrderByDateCreationDesc(agent.getId());
+
+        List<Prospection> prospectionsAssignees = prospectionRepository.findByAgentIdWithHierarchie(agent.getId());
+        List<Prospection> prospectionsCrees = prospectionRepository.findByCreatorIdWithHierarchie(agent.getId());
+
+
+        Set<Prospection> prospectionsUniques = new HashSet<>();
+        prospectionsUniques.addAll(prospectionsAssignees);
+        prospectionsUniques.addAll(prospectionsCrees);
+
+        return new ArrayList<>(prospectionsUniques).stream()
+                .sorted((p1, p2) -> p2.getDateCreation().compareTo(p1.getDateCreation()))
+                .collect(Collectors.toList());
     }
 
 

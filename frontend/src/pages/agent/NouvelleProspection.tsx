@@ -44,7 +44,7 @@ const NouvelleProspection: React.FC = () => {
 
     const chargerFormulaire = async () => {
         try {
-            const token = localStorage.getItem('auth_token');
+            const token = localStorage.getItem('access_token');
             const response = await fetch('http://localhost:8090/api/prospections/formulaire', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -137,7 +137,7 @@ const NouvelleProspection: React.FC = () => {
         setSubmitting(true);
 
         try {
-            const token = localStorage.getItem('auth_token');
+            const token = localStorage.getItem('access_token');
             const response = await fetch('http://localhost:8090/api/prospections', {
                 method: 'POST',
                 headers: {

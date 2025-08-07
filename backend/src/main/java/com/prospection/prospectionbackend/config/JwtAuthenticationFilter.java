@@ -38,7 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
 
 
-        // Si c'est un endpoint public, passer sans vérification
+
         if (shouldNotFilter(request)) {
             System.out.println("Endpoint public - pas de vérification JWT");
             filterChain.doFilter(request, response);
@@ -71,10 +71,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             System.out.println("Pas de token Bearer dans le header");
         }
 
-        // Validation et authentification
+
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
-                // Récupération directe de l'utilisateur (évite la dépendance circulaire)
+                // Récupération directe de l'utilisateur
                 Optional<Utilisateur> utilisateurOpt = utilisateurRepository.findByEmailAndActifTrue(username);
 
                 if (utilisateurOpt.isPresent()) {
@@ -82,30 +82,32 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                     // Validation du token
                     jwtUtil.validateToken(jwtToken);
-                    System.out.println(" Token validé pour: " + username);
+                    System.out.println("Token validé pour: " + username);
 
-                    // Création de l'authentification
+                    // Création de l'authentification avec l'objet Utilisateur comme principal
                     UsernamePasswordAuthenticationToken authToken =
                             new UsernamePasswordAuthenticationToken(
-                                    utilisateur, null, utilisateur.getAuthorities());
+                                    utilisateur,  // ← IMPORTANT: Utilisateur complet comme principal
+                                    null,
+                                    utilisateur.getAuthorities()
+                            );
 
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                     // Définition du contexte de sécurité
                     SecurityContextHolder.getContext().setAuthentication(authToken);
-                    System.out.println(" Authentification définie dans le contexte");
+                    System.out.println("Authentification définie avec utilisateur: " + utilisateur.getEmail());
+                    System.out.println("Principal type: " + authToken.getPrincipal().getClass().getName());
 
                 } else {
-                    System.out.println(" Utilisateur non trouvé: " + username);
+                    System.out.println("Utilisateur non trouvé: " + username);
                 }
 
             } catch (Exception e) {
                 System.out.println("Erreur lors de l'authentification JWT: " + e.getMessage());
+                e.printStackTrace();
+                // Ne pas lancer l'exception, laisser passer la requête sans authentification
             }
-        } else if (username == null) {
-            System.out.println(" Pas de username dans le token");
-        } else {
-            System.out.println("Authentification déjà présente dans le contexte");
         }
 
         filterChain.doFilter(request, response);

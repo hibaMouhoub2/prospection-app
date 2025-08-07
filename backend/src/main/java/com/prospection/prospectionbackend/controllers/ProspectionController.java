@@ -5,7 +5,9 @@ import com.prospection.prospectionbackend.entities.Question;
 import com.prospection.prospectionbackend.entities.Reponse;
 import com.prospection.prospectionbackend.entities.Utilisateur;
 import com.prospection.prospectionbackend.enums.TypeProspection;
+import com.prospection.prospectionbackend.repositories.UtilisateurRepository;
 import com.prospection.prospectionbackend.services.ProspectionService;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -14,18 +16,19 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @RestController
+@Transactional
 @RequestMapping("/prospections")
 @CrossOrigin(origins = "http://localhost:5173")
 public class ProspectionController {
 
     @Autowired
     private ProspectionService prospectionService;
+
+    @Autowired
+    private UtilisateurRepository utilisateurRepository;
 
     @GetMapping("/formulaire")
     public ResponseEntity<Map<String, Object>> getFormulaireVide() {
@@ -63,7 +66,7 @@ public class ProspectionController {
             }
             Utilisateur utilisateur = getUtilisateurAuthentifie();
 
-            // Validation des données de base
+
             if (request.getTypeProspection() == null) {
                 return ResponseEntity.badRequest()
                         .body(Map.of("success", false, "message", "Le type de prospection est obligatoire"));
@@ -74,7 +77,6 @@ public class ProspectionController {
                         .body(Map.of("success", false, "message", "Au moins une réponse est requise"));
             }
 
-            // Vérification des doublons (optionnel)
             if (request.getTelephoneProspect() != null) {
 
                 Map<String, Object> response = new HashMap<>();
@@ -135,9 +137,7 @@ public class ProspectionController {
         }
     }
 
-    /**
-     * Récupère une prospection avec ses réponses
-     */
+
     @GetMapping("/{id}")
     public ResponseEntity<Map<String, Object>> getProspection(@PathVariable Long id) {
         try {
@@ -164,13 +164,7 @@ public class ProspectionController {
         }
     }
 
-    // ===============================
-    // STATISTIQUES
-    // ===============================
 
-    /**
-     * Récupère les statistiques de l'agent connecté
-     */
     @GetMapping("/statistiques")
     public ResponseEntity<Map<String, Object>> getStatistiques() {
         try {
@@ -189,13 +183,7 @@ public class ProspectionController {
         }
     }
 
-    // ===============================
-    // VALIDATION ET UTILITAIRES
-    // ===============================
 
-    /**
-     * Vérifie si un prospect existe déjà
-     */
     @GetMapping("/verifier-doublon")
     public ResponseEntity<Map<String, Object>> verifierDoublon(@RequestParam String telephone) {
         try {
@@ -213,17 +201,49 @@ public class ProspectionController {
         }
     }
 
-    // ===============================
-    // MÉTHODES UTILITAIRES
-    // ===============================
+
+
 
     private Utilisateur getUtilisateurAuthentifie() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !(authentication.getPrincipal() instanceof Utilisateur)) {
-            throw new RuntimeException("Utilisateur non authentifié");
+
+
+        System.out.println("=== DEBUG AUTHENTIFICATION ===");
+        System.out.println("Authentication: " + authentication);
+
+        if (authentication != null) {
+            System.out.println("Authentication class: " + authentication.getClass().getName());
+            System.out.println("Principal: " + authentication.getPrincipal());
+            System.out.println("Principal class: " + authentication.getPrincipal().getClass().getName());
         }
-        return (Utilisateur) authentication.getPrincipal();
+
+        if (authentication == null) {
+            throw new RuntimeException("Aucune authentification trouvée dans le contexte");
+        }
+
+
+        Object principal = authentication.getPrincipal();
+
+        if (principal instanceof Utilisateur) {
+            return (Utilisateur) principal;
+        }
+
+
+        if (principal instanceof String) {
+            String email = (String) principal;
+
+            Optional<Utilisateur> utilisateurOpt = utilisateurRepository.findByEmailAndActifTrue(email);
+            if (utilisateurOpt.isPresent()) {
+                return utilisateurOpt.get();
+            } else {
+                throw new RuntimeException("Utilisateur non trouvé pour l'email: " + email);
+            }
+        }
+
+        throw new RuntimeException("Type de principal non supporté: " + principal.getClass().getName());
     }
+
+
 
     private Map<String, Object> mapProspectionToResponse(Prospection prospection) {
         Map<String, Object> map = new HashMap<>();

@@ -100,13 +100,13 @@ public class SecurityConfig {
                         .requestMatchers( "/questions/types").permitAll()
                         .requestMatchers("/structure/**").permitAll()
                         .requestMatchers("/api/test/public", "/test/public").permitAll()
-                        .requestMatchers("/prospections/formulaire").permitAll()
+                        .requestMatchers("/prospections/**").permitAll()
 
 
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/error").permitAll()
 
-                        // === TOUS LES AUTRES ENDPOINTS NÉCESSITENT UN JWT ===
+
                         .anyRequest().authenticated()
                 )
 

@@ -2,7 +2,7 @@ const API_BASE_URL = 'http://localhost:8090/api';
 
 export class ApiService {
     private getAuthHeaders(): Record<string, string> {
-        const token = localStorage.getItem('auth_token');
+        const token = localStorage.getItem('access_token');
         return {
             'Content-Type': 'application/json',
             ...(token ? { 'Authorization': `Bearer ${token}` } : {})

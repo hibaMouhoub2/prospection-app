@@ -91,5 +91,25 @@ public interface ProspectionRepository extends JpaRepository<Prospection, Long> 
 
     Optional<Prospection> findTopByCreateurIdOrderByDateCreationDesc(Long createurId);
 
+    @Query("SELECT p FROM Prospection p " +
+            "LEFT JOIN FETCH p.branche b " +
+            "LEFT JOIN FETCH p.region r " +
+            "LEFT JOIN FETCH p.supervision s " +
+            "LEFT JOIN FETCH p.createur c " +
+            "LEFT JOIN FETCH p.agentAssigne a " +
+            "WHERE p.agentAssigne.id = :agentId " +
+            "ORDER BY p.dateCreation DESC")
+    List<Prospection> findByAgentIdWithHierarchie(@Param("agentId") Long agentId);
+
+    @Query("SELECT p FROM Prospection p " +
+            "LEFT JOIN FETCH p.branche b " +
+            "LEFT JOIN FETCH p.region r " +
+            "LEFT JOIN FETCH p.supervision s " +
+            "LEFT JOIN FETCH p.createur c " +
+            "LEFT JOIN FETCH p.agentAssigne a " +
+            "WHERE p.createur.id = :creatorId " +
+            "ORDER BY p.dateCreation DESC")
+    List<Prospection> findByCreatorIdWithHierarchie(@Param("creatorId") Long creatorId);
+
 
 }
