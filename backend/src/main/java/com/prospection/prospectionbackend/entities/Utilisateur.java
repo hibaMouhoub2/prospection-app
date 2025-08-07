@@ -22,7 +22,7 @@ import java.util.Collections;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@ToString
+@ToString(exclude = {"region", "supervision", "branche", "motDePasse"})
 public class Utilisateur implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

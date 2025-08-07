@@ -21,7 +21,7 @@ import java.util.*;
 @RestController
 @Transactional
 @RequestMapping("/prospections")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174", "http://localhost:3000"})
 public class ProspectionController {
 
     @Autowired
@@ -118,22 +118,64 @@ public class ProspectionController {
 
     @GetMapping("/mes-prospections")
     public ResponseEntity<Map<String, Object>> getMesProspections() {
-        try {
-            Utilisateur utilisateur = getUtilisateurAuthentifie();
-            List<Prospection> prospections = prospectionService.getProspectionsAgent(utilisateur);
+        System.out.println("=== DÉBUT getMesProspections ===");
 
+        try {
+            System.out.println("Étape 1: Vérification de l'authentification...");
+
+            // Debug authentification
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            System.out.println("Authentication object: " + auth);
+            System.out.println("Is authenticated: " + (auth != null ? auth.isAuthenticated() : "auth is null"));
+
+            if (auth != null) {
+                System.out.println("Principal type: " + auth.getPrincipal().getClass().getName());
+                System.out.println("Principal value: " + auth.getPrincipal());
+            }
+
+            System.out.println("Étape 2: Récupération utilisateur...");
+            Utilisateur utilisateur = getUtilisateurAuthentifie();
+            System.out.println("Utilisateur récupéré: " + utilisateur.getEmail() + " (ID: " + utilisateur.getId() + ")");
+            System.out.println("Rôle utilisateur: " + utilisateur.getRole());
+
+            System.out.println("Étape 3: Appel service getProspectionsAgent...");
+            List<Prospection> prospections = prospectionService.getProspectionsAgent(utilisateur);
+            System.out.println("Nombre de prospections récupérées: " + prospections.size());
+
+            System.out.println("Étape 4: Mapping des prospections...");
+            List<Map<String, Object>> prospectionsMapped = new ArrayList<>();
+
+            for (int i = 0; i < prospections.size(); i++) {
+                try {
+                    Prospection p = prospections.get(i);
+                    System.out.println("Mapping prospection " + (i+1) + "/" + prospections.size() + " - ID: " + p.getId());
+                    Map<String, Object> mapped = mapProspectionToResponse(p);
+                    prospectionsMapped.add(mapped);
+                } catch (Exception e) {
+                    System.out.println("ERREUR lors du mapping de la prospection " + (i+1) + ": " + e.getMessage());
+                    e.printStackTrace();
+                    throw e; // Re-lancer l'exception pour arrêter le processus
+                }
+            }
+
+            System.out.println("Étape 5: Création de la réponse...");
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("prospections", prospections.stream()
-                    .map(this::mapProspectionToResponse)
-                    .toList());
+            response.put("prospections", prospectionsMapped);
             response.put("total", prospections.size());
 
+            System.out.println("=== getMesProspections TERMINÉ AVEC SUCCÈS ===");
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
+            System.out.println("=== ERREUR DANS getMesProspections ===");
+            System.out.println("Type d'erreur: " + e.getClass().getName());
+            System.out.println("Message: " + e.getMessage());
+            System.out.println("Stack trace:");
+            e.printStackTrace();
+
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("success", false, "message", e.getMessage()));
+                    .body(Map.of("success", false, "message", "Erreur: " + e.getMessage()));
         }
     }
 
@@ -167,19 +209,34 @@ public class ProspectionController {
 
     @GetMapping("/statistiques")
     public ResponseEntity<Map<String, Object>> getStatistiques() {
-        try {
-            Utilisateur utilisateur = getUtilisateurAuthentifie();
-            Map<String, Object> statistiques = prospectionService.getStatistiquesAgent(utilisateur.getId());
+        System.out.println("=== DÉBUT getStatistiques ===");
 
+        try {
+            System.out.println("Étape 1: Récupération utilisateur...");
+            Utilisateur utilisateur = getUtilisateurAuthentifie();
+            System.out.println("Utilisateur: " + utilisateur.getEmail() + " (ID: " + utilisateur.getId() + ")");
+
+            System.out.println("Étape 2: Appel service getStatistiquesAgent...");
+            Map<String, Object> statistiques = prospectionService.getStatistiquesAgent(utilisateur.getId());
+            System.out.println("Statistiques récupérées: " + statistiques);
+
+            System.out.println("Étape 3: Création réponse...");
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("statistiques", statistiques);
 
+            System.out.println("=== getStatistiques TERMINÉ AVEC SUCCÈS ===");
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
+            System.out.println("=== ERREUR DANS getStatistiques ===");
+            System.out.println("Type d'erreur: " + e.getClass().getName());
+            System.out.println("Message: " + e.getMessage());
+            System.out.println("Stack trace:");
+            e.printStackTrace();
+
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("success", false, "message", e.getMessage()));
+                    .body(Map.of("success", false, "message", "Erreur: " + e.getMessage()));
         }
     }
 
@@ -207,7 +264,6 @@ public class ProspectionController {
     private Utilisateur getUtilisateurAuthentifie() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-
         System.out.println("=== DEBUG AUTHENTIFICATION ===");
         System.out.println("Authentication: " + authentication);
 
@@ -217,32 +273,51 @@ public class ProspectionController {
             System.out.println("Principal class: " + authentication.getPrincipal().getClass().getName());
         }
 
-        if (authentication == null) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            System.out.println("Pas d'authentification valide");
             throw new RuntimeException("Aucune authentification trouvée dans le contexte");
-        }
 
+        }
 
         Object principal = authentication.getPrincipal();
 
+        // CAS 1: Principal est déjà un objet Utilisateur
         if (principal instanceof Utilisateur) {
+            System.out.println("✅ Principal est un Utilisateur: " + ((Utilisateur) principal).getEmail());
             return (Utilisateur) principal;
         }
 
-
+        // CAS 2: Principal est une String (email) - fallback
         if (principal instanceof String) {
             String email = (String) principal;
+            System.out.println("⚠️ Principal est une String: " + email);
 
             Optional<Utilisateur> utilisateurOpt = utilisateurRepository.findByEmailAndActifTrue(email);
             if (utilisateurOpt.isPresent()) {
+                System.out.println("✅ Utilisateur trouvé par email: " + email);
                 return utilisateurOpt.get();
             } else {
                 throw new RuntimeException("Utilisateur non trouvé pour l'email: " + email);
             }
         }
 
-        throw new RuntimeException("Type de principal non supporté: " + principal.getClass().getName());
-    }
+        // CAS 3: Principal est UserDetails
+        if (principal instanceof org.springframework.security.core.userdetails.UserDetails) {
+            String email = ((org.springframework.security.core.userdetails.UserDetails) principal).getUsername();
+            System.out.println("⚠️ Principal est UserDetails: " + email);
 
+            Optional<Utilisateur> utilisateurOpt = utilisateurRepository.findByEmailAndActifTrue(email);
+            if (utilisateurOpt.isPresent()) {
+                System.out.println("✅ Utilisateur trouvé par UserDetails: " + email);
+                return utilisateurOpt.get();
+            } else {
+                throw new RuntimeException("Utilisateur non trouvé pour l'email: " + email);
+            }
+        }
+
+        throw new RuntimeException("Type de principal non supporté: " +
+                (principal != null ? principal.getClass().getName() : "null"));
+    }
 
 
     private Map<String, Object> mapProspectionToResponse(Prospection prospection) {
@@ -255,11 +330,11 @@ public class ProspectionController {
         map.put("statutDisplay", prospection.getStatut().getDisplayName());
         map.put("statutCssClass", prospection.getStatut().getCssClass());
 
-        // Informations du prospect
-//        map.put("nomProspect", prospection.getNomProspect());
-//        map.put("prenomProspect", prospection.getPrenomProspect());
-//        map.put("telephoneProspect", prospection.getTelephoneProspect());
-//        map.put("emailProspect", prospection.getEmailProspect());
+
+        map.put("nomProspect", null);
+        map.put("prenomProspect", null);
+        map.put("telephoneProspect", null);
+        map.put("emailProspect", null);
         map.put("commentaire", prospection.getCommentaire());
 
         // Informations créateur

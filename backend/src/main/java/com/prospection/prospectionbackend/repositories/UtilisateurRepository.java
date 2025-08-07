@@ -30,4 +30,11 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> 
     List<Utilisateur> findUtilisateursAccessiblesByRegion(@Param("regionId") Long regionId);
     @Query("SELECT u.role, COUNT(u) FROM Utilisateur u WHERE u.actif = true GROUP BY u.role")
     List<Object[]> countUtilisateursByRole();
+
+    @Query("SELECT u FROM Utilisateur u " +
+            "LEFT JOIN FETCH u.region " +
+            "LEFT JOIN FETCH u.supervision " +
+            "LEFT JOIN FETCH u.branche " +
+            "WHERE u.email = :email AND u.actif = true")
+    Optional<Utilisateur> findByEmailWithRelations(@Param("email") String email);
 }

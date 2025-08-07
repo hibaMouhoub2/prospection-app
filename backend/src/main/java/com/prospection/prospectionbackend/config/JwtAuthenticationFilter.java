@@ -74,8 +74,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
-                // Récupération directe de l'utilisateur
-                Optional<Utilisateur> utilisateurOpt = utilisateurRepository.findByEmailAndActifTrue(username);
+
+                Optional<Utilisateur> utilisateurOpt = utilisateurRepository.findByEmailWithRelations(username);
+
+
 
                 if (utilisateurOpt.isPresent()) {
                     Utilisateur utilisateur = utilisateurOpt.get();
@@ -84,17 +86,33 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     jwtUtil.validateToken(jwtToken);
                     System.out.println("Token validé pour: " + username);
 
-                    // Création de l'authentification avec l'objet Utilisateur comme principal
+
+                    try {
+                        if (utilisateur.getRegion() != null) {
+                            utilisateur.getRegion().getNom();
+                        }
+                        if (utilisateur.getSupervision() != null) {
+                            utilisateur.getSupervision().getNom();
+                        }
+                        if (utilisateur.getBranche() != null) {
+                            utilisateur.getBranche().getNom();
+                        }
+                    } catch (Exception e) {
+                        System.out.println("Avertissement: Impossible de charger les relations de l'utilisateur: " + e.getMessage());
+
+                    }
+
+
                     UsernamePasswordAuthenticationToken authToken =
                             new UsernamePasswordAuthenticationToken(
-                                    utilisateur,  // ← IMPORTANT: Utilisateur complet comme principal
+                                    utilisateur,
                                     null,
                                     utilisateur.getAuthorities()
                             );
 
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                    // Définition du contexte de sécurité
+
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                     System.out.println("Authentification définie avec utilisateur: " + utilisateur.getEmail());
                     System.out.println("Principal type: " + authToken.getPrincipal().getClass().getName());
@@ -106,7 +124,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             } catch (Exception e) {
                 System.out.println("Erreur lors de l'authentification JWT: " + e.getMessage());
                 e.printStackTrace();
-                // Ne pas lancer l'exception, laisser passer la requête sans authentification
+
             }
         }
 
@@ -130,7 +148,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 path.startsWith("/h2-console") ||
                 path.equals("/actuator/health") ||
                 path.equals("/error") ||
-                "OPTIONS".equals(method); // CORS preflight
+                "OPTIONS".equals(method);
 
         if (shouldNotFilter) {
             System.out.println("Exclusion du filtre JWT pour: " + path);
